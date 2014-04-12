@@ -1,6 +1,10 @@
 Revision history for Term::TablePrint
 
 
+0.007   2014-04-12
+        - The option "add_header" replaces the option "header_row".
+        - Update documentation.
+
 0.006   2014-04-09
         - Update documentation.
 

@@ -4,7 +4,7 @@ use warnings;
 use strict;
 use 5.10.1;
 
-our $VERSION = '0.006';
+our $VERSION = '0.007';
 use Exporter 'import';
 our @EXPORT_OK = qw( print_table );
 
@@ -177,7 +177,6 @@ sub print_table {
             $self->__validate_options( $opt );
         }
         $self->__set_defaults();
-        #if ( ! $self->{header_row} ) {
         if ( $self->{add_header} ) {
             unshift @$table_ref, [ map { $_ . '_' . $self->{no_col} } 1 .. @{$table_ref->[0]} ];
         }
@@ -515,7 +514,7 @@ Term::TablePrint - Print a table to the terminal.
 
 =head1 VERSION
 
-Version 0.006
+Version 0.007
 
 =cut
 
