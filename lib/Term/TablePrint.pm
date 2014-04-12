@@ -40,6 +40,12 @@ sub __validate_options {
         %$self = ( %$self, %$opt );
         return;
     }
+    # ###
+    if ( defined $opt->{header_row} && ! defined $opt->{add_header} ) {
+        $opt->{add_header} = $opt->{header_row} ? 0 : 1;
+        delete $opt->{header_row};
+    }
+    #
     my $valid = {
         progress_bar    => '[ 0-9 ]+',
         max_rows        => '[ 0-9 ]+',
@@ -47,7 +53,7 @@ sub __validate_options {
         tab_width       => '[ 0-9 ]+',
         table_expand    => '[ 0 1 ]',
         binary_filter   => '[ 0 1 ]',
-        header_row      => '[ 0 1 ]',
+        add_header      => '[ 0 1 ]',
         choose_columns  => '[ 0 1 2 ]',
         mouse           => '[ 0 1 2 3 4 ]',
         binary_string   => '',
@@ -88,7 +94,7 @@ sub __set_defaults {
     $self->{mouse}          //= 0;
     $self->{binary_string}  //= 'BNRY';
     $self->{choose_columns} //= 0;
-    $self->{header_row}     //= 1;
+    $self->{add_header}     //= 0;
     $self->{thsd_sep} = ',';
     $self->{no_col}   = 'col';
 }
@@ -171,7 +177,8 @@ sub print_table {
             $self->__validate_options( $opt );
         }
         $self->__set_defaults();
-        if ( ! $self->{header_row} ) {
+        #if ( ! $self->{header_row} ) {
+        if ( $self->{add_header} ) {
             unshift @$table_ref, [ map { $_ . '_' . $self->{no_col} } 1 .. @{$table_ref->[0]} ];
         }
         my $last_row_idx = $self->{max_rows} && $self->{max_rows} < @$table_ref ? $self->{max_rows} : $#$table_ref;
@@ -654,11 +661,21 @@ closes this output and goes back to the table output.
 
 Defaults may change in a future release.
 
-=head3 header_row
+=head3 header_row DEPRECATED
 
-If disabled (set to 0) a header row is added: the columns are numbered starting with 1.
+This option is deprecated and will be removed. Use the option I<add_header> instead.
+
+If the default value is kept C<print_table> expects the first row as a header row.
+
+If set to 0 C<print_table> adds a header row - the columns are numbered starting with 1.
 
 Default: 1
+
+=head3 add_header
+
+If set to 1 C<print_table> adds a header row - the columns are numbered starting with 1.
+
+Default: 0
 
 =head3 choose_columns
 
@@ -711,6 +728,8 @@ Default: 20_000
 
 I<table_expand> set to 1 enables printing the chosen table row by pressing the C<Return> key.
 
+If set to 0 the cursor jumps to the to header row (if not already there) when C<Return> pressed.
+
 Default: 1
 
 =head3 mouse
@@ -721,7 +740,7 @@ Default: 0
 
 =head3 binary_filter
 
-Print "BNRY" instead of arbitrary binary data.
+If set to 1 "BNRY" is printed instead of arbitrary binary data.
 
 If the data matches the repexp C</[\x00-\x08\x0B-\x0C\x0E-\x1F]/> it is considered arbitrary binary data.
 
