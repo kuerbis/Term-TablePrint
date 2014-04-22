@@ -4,7 +4,7 @@ use warnings;
 use strict;
 use 5.10.1;
 
-our $VERSION = '0.007';
+our $VERSION = '0.008';
 use Exporter 'import';
 our @EXPORT_OK = qw( print_table );
 
@@ -40,12 +40,6 @@ sub __validate_options {
         %$self = ( %$self, %$opt );
         return;
     }
-    # ###
-    if ( defined $opt->{header_row} && ! defined $opt->{add_header} ) {
-        $opt->{add_header} = $opt->{header_row} ? 0 : 1;
-        delete $opt->{header_row};
-    }
-    #
     my $valid = {
         progress_bar    => '[ 0-9 ]+',
         max_rows        => '[ 0-9 ]+',
@@ -514,7 +508,7 @@ Term::TablePrint - Print a table to the terminal.
 
 =head1 VERSION
 
-Version 0.007
+Version 0.008
 
 =cut
 
@@ -541,22 +535,16 @@ Version 0.007
 
 C<print_table> prints a table to C<STDOUT> or to C<STDERR> if C<STDOUT> is redirected.
 
-C<print_table> provides a cursor which highlights the row on which it is located.
-
-The user can scroll through the table with the different cursor keys - see L</USAGE>.
+C<print_table> provides a cursor which highlights the row on which it is located. The user can scroll through the table
+with the different cursor keys - see L</KEYS>.
 
 If the table has more rows than the terminal, the table is divided up on as many pages as needed automatically.
-
-If the cursor reaches the end of a page, the next page is shown automatically (until the last page is reached).
-
-Also if the cursor reaches the topmost line, the previous page is shown automatically if it is not already the first
-one.
+If the cursor reaches the end of a page, the next page is shown automatically (until the last page is reached). Also if
+the cursor reaches the topmost line, the previous page is shown automatically if it is not already the first one.
 
 If the terminal is too narrow to print the table, the columns are adjusted to the available width automatically.
-
-If the option I<table_expand> is enabled and a row is selected with the C<Return> key, each column of that row is output
-in its one line preceded by the column name. This might be useful if the columns were cut due to the too low terminal
-width.
+If the option I<table_expand> is enabled and a row is selected each column of that row is output in its one line
+preceded by the column name. This might be useful if the columns were cut due to the too low terminal width.
 
 To get a proper output C<print_table> uses the C<columns> method from L<Unicode::GCString> to calculate the string
 length.
@@ -616,7 +604,9 @@ The subroutine C<print_table> takes the same arguments as the method L</print_ta
 
 =head1 USAGE
 
-=head2 Keys to move around
+=head2 KEYS
+
+Keys to move around:
 
 =over
 
@@ -633,42 +623,35 @@ the C<PageUp> key (or C<Ctrl-B>) to go back one page, the C<PageDown> key (or C<
 the C<Home> key (or C<Ctrl-A>) to jump to the first row of the table, the C<End> key (or C<Ctrl-E>) to jump to the last
 row of the table.
 
+=back
+
+The C<Return> key closes the table if the cursor is on the header row.
+
+If the cursor is not on the header row:
+
+=over
+
 =item *
 
-the C<Return> key to close the table or to print the highlighted row if I<table_expand> is enabled.
+with the option I<table_expand> disabled the cursor jumps to the table head if C<Return> is pressed.
+
+=item *
+
+with the option I<table_expand> enabled each columns of the selected row is output in its own line preceded by the
+column name if C<Return> is pressed. Another C<Return> closes this output and goes back to the table output. If a row is
+selected twice in succession, the pointer jumps to the head of the table.
 
 =back
 
-With the option I<table_expand> disabled:
+If the width of the window is changed and the option I<table_expand> is enabled the user can rewrite the screen by
+choosing a row.
 
-- if the cursor is on the table head C<Return> closes the table.
-
-- if the cursor is not on the table head the cursor jumps to the table head if C<Return> is pressed.
-
-With the option I<table_expand> enabled:
-
-- selecting the head of the table closes the table.
-
-- if a row is selected, each column of that row is output in its one line preceded by the column name. Another C<Return>
-closes this output and goes back to the table output.
-
-- if a row is selected twice in succession, the pointer jumps to the head of the table.
-
-- if the width of the window is changed the user can rewrite the screen by choosing a row.
+If the option I<choose_columns> is enabled the C<SpaceBar> key (or the right mouse key) can be used to select columns -
+see option I<choose_columns>.
 
 =head2 OPTIONS
 
 Defaults may change in a future release.
-
-=head3 header_row DEPRECATED
-
-This option is deprecated and will be removed. Use the option I<add_header> instead.
-
-If the default value is kept C<print_table> expects the first row as a header row.
-
-If set to 0 C<print_table> adds a header row - the columns are numbered starting with 1.
-
-Default: 1
 
 =head3 add_header
 
@@ -712,7 +695,7 @@ Set the maximum number of printed table rows.
 To disable the automatic limit set I<max_rows> to 0.
 
 If the number of table rows is equal to or higher than I<max_rows> the last row of the output says "REACHED LIMIT" or
-"=LIMIT=' if "REACHED LIMIT" doesn't fit in the row.
+"=LIMIT=" if "REACHED LIMIT" doesn't fit in the row.
 
 Default: 50_000
 
@@ -725,9 +708,10 @@ Default: 20_000
 
 =head3 table_expand
 
-I<table_expand> set to 1 enables printing the chosen table row by pressing the C<Return> key.
+If the option I<table_expand> is set to 1 and C<Return> is pressed the selected table row is printed with each column in
+its own line.
 
-If set to 0 the cursor jumps to the to header row (if not already there) when C<Return> pressed.
+If I<table_expand> is set to 0 the cursor jumps to the to header row (if not already there) when C<Return> is pressed.
 
 Default: 1
 
@@ -805,14 +789,18 @@ You can find documentation for this module with the perldoc command.
 
     perldoc Term::TablePrint
 
-=head1 AUTHOR
+=head1 SEE ALSO
 
-Matthäus Kiem <cuer2s@gmail.com>
+L<App::DBBrowser>
 
 =head1 CREDITS
 
 Thanks to the L<Perl-Community.de|http://www.perl-community.de> and the people form
 L<stackoverflow|http://stackoverflow.com> for the help.
+
+=head1 AUTHOR
+
+Matthäus Kiem <cuer2s@gmail.com>
 
 =head1 LICENSE AND COPYRIGHT
 
