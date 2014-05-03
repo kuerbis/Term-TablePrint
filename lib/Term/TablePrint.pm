@@ -2,9 +2,9 @@ package Term::TablePrint;
 
 use warnings;
 use strict;
-use 5.10.1;
+use 5.010001;
 
-our $VERSION = '0.008';
+our $VERSION = '0.009';
 use Exporter 'import';
 our @EXPORT_OK = qw( print_table );
 
@@ -504,11 +504,11 @@ __END__
 
 =head1 NAME
 
-Term::TablePrint - Print a table to the terminal.
+Term::TablePrint - Print a table to the terminal and browse it interactively.
 
 =head1 VERSION
 
-Version 0.008
+Version 0.009
 
 =cut
 
@@ -533,21 +533,21 @@ Version 0.008
 
 =head1 DESCRIPTION
 
-C<print_table> prints a table to C<STDOUT> or to C<STDERR> if C<STDOUT> is redirected.
+C<print_table> shows a table and lets the user interactively browse it. It provides a cursor which highlights the row
+on which it is located. The user can scroll through the table with the different cursor keys - see L</KEYS>.
 
-C<print_table> provides a cursor which highlights the row on which it is located. The user can scroll through the table
-with the different cursor keys - see L</KEYS>.
+If the table has more rows than the terminal, the table is divided up on as many pages as needed automatically. If the
+cursor reaches the end of a page, the next page is shown automatically (until the last page is reached). Also if the
+cursor reaches the topmost line, the previous page is shown automatically if it is not already the first one.
 
-If the table has more rows than the terminal, the table is divided up on as many pages as needed automatically.
-If the cursor reaches the end of a page, the next page is shown automatically (until the last page is reached). Also if
-the cursor reaches the topmost line, the previous page is shown automatically if it is not already the first one.
-
-If the terminal is too narrow to print the table, the columns are adjusted to the available width automatically.
-If the option I<table_expand> is enabled and a row is selected each column of that row is output in its one line
-preceded by the column name. This might be useful if the columns were cut due to the too low terminal width.
+If the terminal is too narrow to print the table, the columns are adjusted to the available width automatically. If the
+option I<table_expand> is enabled and a row is selected with C<Return>, each column of that row is output in its own
+line preceded by the column name. This might be useful if the columns were cut due to the too low terminal width.
 
 To get a proper output C<print_table> uses the C<columns> method from L<Unicode::GCString> to calculate the string
 length.
+
+If STDOUT is redirected C<print_table> prints the table to STDERR.
 
 The following modifications are made (at a copy of the original data) before the output.
 
@@ -637,7 +637,7 @@ with the option I<table_expand> disabled the cursor jumps to the table head if C
 
 =item *
 
-with the option I<table_expand> enabled each columns of the selected row is output in its own line preceded by the
+with the option I<table_expand> enabled each column of the selected row is output in its own line preceded by the
 column name if C<Return> is pressed. Another C<Return> closes this output and goes back to the table output. If a row is
 selected twice in succession, the pointer jumps to the head of the table.
 
@@ -647,7 +647,7 @@ If the width of the window is changed and the option I<table_expand> is enabled 
 choosing a row.
 
 If the option I<choose_columns> is enabled the C<SpaceBar> key (or the right mouse key) can be used to select columns -
-see option I<choose_columns>.
+see option I<choose_columns> below.
 
 =head2 OPTIONS
 
@@ -661,10 +661,10 @@ Default: 0
 
 =head3 choose_columns
 
-If set to 1 the user can choose which columns to print. The columns can be marked with the C<SpaceBar>. The list of
-marked columns including the highlighted column are printed as soon as C<Return> is pressed.
+If I<choose_columns> is set to 1, the user can choose which columns to print. The columns can be marked with the
+C<SpaceBar>. The list of marked columns including the highlighted column are printed as soon as C<Return> is pressed.
 
-If I<choose_columns> is set to 2 it is possible to change the order of the columns. Columns can be added (with
+If I<choose_columns> is set to 2, it is possible to change the order of the columns. Columns can be added (with
 the C<SpaceBar> and the C<Return> key) until the users confirms with the I<-ok-> menu entry.
 
 Default: 0
@@ -677,8 +677,8 @@ Default: 2
 
 =head3 min_col_width
 
-The columns with a width below or equal I<min_col_width> are only trimmed if it is still required to lower the row
-width despite all columns have been trimmed to I<min_col_width>.
+The columns with a width below or equal I<min_col_width> are only trimmed if it is still required to lower the row width
+despite all columns wider than I<min_col_width> have been trimmed to I<min_col_width>.
 
 Default: 30
 
@@ -690,28 +690,28 @@ Default: "" (empty string)
 
 =head3 max_rows
 
-Set the maximum number of printed table rows.
+Set the maximum number of used table rows. The used table rows are kept in memory.
 
 To disable the automatic limit set I<max_rows> to 0.
 
-If the number of table rows is equal to or higher than I<max_rows> the last row of the output says "REACHED LIMIT" or
+If the number of table rows is equal to or higher than I<max_rows>, the last row of the output says "REACHED LIMIT" or
 "=LIMIT=" if "REACHED LIMIT" doesn't fit in the row.
 
 Default: 50_000
 
 =head3 progress_bar
 
-Set the progress bar threshold. If the number of fields (rows x columns) is higher than the threshold a progress bar is
+Set the progress bar threshold. If the number of fields (rows x columns) is higher than the threshold, a progress bar is
 shown while preparing the data for the output.
 
 Default: 20_000
 
 =head3 table_expand
 
-If the option I<table_expand> is set to 1 and C<Return> is pressed the selected table row is printed with each column in
-its own line.
+If the option I<table_expand> is set to 1 and C<Return> is pressed, the selected table row is printed with each column
+in its own line.
 
-If I<table_expand> is set to 0 the cursor jumps to the to header row (if not already there) when C<Return> is pressed.
+If I<table_expand> is set to 0, the cursor jumps to the to header row (if not already there) when C<Return> is pressed.
 
 Default: 1
 
@@ -723,9 +723,9 @@ Default: 0
 
 =head3 binary_filter
 
-If set to 1 "BNRY" is printed instead of arbitrary binary data.
+If I<binary_filter> is set to 1, "BNRY" is printed instead of arbitrary binary data.
 
-If the data matches the repexp C</[\x00-\x08\x0B-\x0C\x0E-\x1F]/> it is considered arbitrary binary data.
+If the data matches the repexp C</[\x00-\x08\x0B-\x0C\x0E-\x1F]/>, it is considered arbitrary binary data.
 
 Printing arbitrary binary data could break the output.
 
@@ -753,7 +753,7 @@ C<print_table> dies
 
 =item
 
-with an invalid number of arguments.
+if an invalid number of arguments is passed.
 
 =item
 

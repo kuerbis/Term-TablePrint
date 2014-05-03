@@ -1,6 +1,9 @@
 Revision history for Term::TablePrint
 
 
+0.009   2014-05-03
+        - Improved documentation.
+
 0.008   2014-04-22
         - Removed deprecated option "header_row".
         - Improved documentation.
