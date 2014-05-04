@@ -4,7 +4,7 @@ use warnings;
 use strict;
 use 5.010001;
 
-our $VERSION = '0.009';
+our $VERSION = '0.010';
 use Exporter 'import';
 our @EXPORT_OK = qw( print_table );
 
@@ -508,7 +508,7 @@ Term::TablePrint - Print a table to the terminal and browse it interactively.
 
 =head1 VERSION
 
-Version 0.009
+Version 0.010
 
 =cut
 
@@ -537,7 +537,7 @@ C<print_table> shows a table and lets the user interactively browse it. It provi
 on which it is located. The user can scroll through the table with the different cursor keys - see L</KEYS>.
 
 If the table has more rows than the terminal, the table is divided up on as many pages as needed automatically. If the
-cursor reaches the end of a page, the next page is shown automatically (until the last page is reached). Also if the
+cursor reaches the end of a page, the next page is shown automatically until the last page is reached. Also if the
 cursor reaches the topmost line, the previous page is shown automatically if it is not already the first one.
 
 If the terminal is too narrow to print the table, the columns are adjusted to the available width automatically. If the
@@ -564,7 +564,7 @@ In addition, characters of the Unicode property C<Other> are removed.
 
     s/\p{C}//g;
 
-In C<Term::TablePrint> the utf8 warnings are disabled.
+In C<Term::TablePrint> the C<utf8> C<warnings> are disabled.
 
     no warnings 'utf8';
 
@@ -582,7 +582,7 @@ holds the options - the available options are listed in L</OPTIONS>.
 
 =head2 print_table
 
-Prints the table passed with the first argument.
+The C<print_table> method prints the table passed with the first argument.
 
     $tp->print_table( $array_ref, [ \%options ] );
 
@@ -596,7 +596,7 @@ listed in L</OPTIONS>.
 
 =head2 print_table
 
-Prints the table passed with the first argument.
+The C<print_table> subroutine prints the table passed with the first argument.
 
     print_table( $array_ref, [ \%options ] );
 
@@ -643,11 +643,11 @@ selected twice in succession, the pointer jumps to the head of the table.
 
 =back
 
-If the width of the window is changed and the option I<table_expand> is enabled the user can rewrite the screen by
+If the width of the window is changed and the option I<table_expand> is enabled, the user can rewrite the screen by
 choosing a row.
 
-If the option I<choose_columns> is enabled the C<SpaceBar> key (or the right mouse key) can be used to select columns -
-see option I<choose_columns> below.
+If the option I<choose_columns> is enabled, the C<SpaceBar> key (or the right mouse key) can be used to select columns -
+see option L</choose_columns>.
 
 =head2 OPTIONS
 
@@ -655,7 +655,7 @@ Defaults may change in a future release.
 
 =head3 add_header
 
-If set to 1 C<print_table> adds a header row - the columns are numbered starting with 1.
+If I<add_header> is set to 1, C<print_table> adds a header row - the columns are numbered starting with 1.
 
 Default: 0
 
@@ -665,7 +665,7 @@ If I<choose_columns> is set to 1, the user can choose which columns to print. Th
 C<SpaceBar>. The list of marked columns including the highlighted column are printed as soon as C<Return> is pressed.
 
 If I<choose_columns> is set to 2, it is possible to change the order of the columns. Columns can be added (with
-the C<SpaceBar> and the C<Return> key) until the users confirms with the I<-ok-> menu entry.
+the C<SpaceBar> and the C<Return> key) until the user confirms with the I<-ok-> menu entry.
 
 Default: 0
 
