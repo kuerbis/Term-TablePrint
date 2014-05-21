@@ -48,7 +48,7 @@ sub __validate_options {
         binary_filter   => '[ 0 1 ]',
         add_header      => '[ 0 1 ]',
         keep_header     => '[ 0 1 ]',
-        table_expand    => '[ 0 1 2 ]',
+        table_expand    => '[ 0 1 ]',
         choose_columns  => '[ 0 1 2 ]',
         mouse           => '[ 0 1 2 3 4 ]',
         binary_string   => '',
