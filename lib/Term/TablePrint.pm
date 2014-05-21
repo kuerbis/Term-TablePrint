@@ -4,7 +4,7 @@ use warnings;
 use strict;
 use 5.010001;
 
-our $VERSION = '0.010';
+our $VERSION = '0.010_01';
 use Exporter 'import';
 our @EXPORT_OK = qw( print_table );
 
@@ -45,9 +45,10 @@ sub __validate_options {
         max_rows        => '[ 0-9 ]+',
         min_col_width   => '[ 0-9 ]+',
         tab_width       => '[ 0-9 ]+',
-        table_expand    => '[ 0 1 ]',
         binary_filter   => '[ 0 1 ]',
         add_header      => '[ 0 1 ]',
+        keep_header     => '[ 0 1 ]',
+        table_expand    => '[ 0 1 2 ]',
         choose_columns  => '[ 0 1 2 ]',
         mouse           => '[ 0 1 2 3 4 ]',
         binary_string   => '',
@@ -89,6 +90,7 @@ sub __set_defaults {
     $self->{binary_string}  //= 'BNRY';
     $self->{choose_columns} //= 0;
     $self->{add_header}     //= 0;
+    $self->{keep_header}    //= 1;
     $self->{thsd_sep} = ',';
     $self->{no_col}   = 'col';
 }
@@ -218,6 +220,16 @@ sub __inner_print_tbl {
     my $width_cols = $self->__calc_avail_width( $a_ref, $term_width );
     return if ! $width_cols;
     my ( $list, $len ) = $self->__trunk_col_to_avail_width( $a_ref, $width_cols );
+
+    ####
+    if ( @$list == 1 && $self->{keep_header} ) {
+        choose(
+            [ "Empty Table!", map { " $_" } @{$a_ref->[0]} ],
+            { prompt => '', clear_screen => 1, layout => 3, mouse => $self->{mouse} }
+        );
+    }
+    ####
+
     if ( $self->{max_rows} && @$list - 1 >= $self->{max_rows} ) {
         my $reached_limit = 'REACHED LIMIT "MAX_ROWS": ' . insert_sep( $self->{max_rows}, $self->{thsd_sep} );
         my $gcs1 = Unicode::GCString->new( $reached_limit );
@@ -231,6 +243,7 @@ sub __inner_print_tbl {
         push @$list, unicode_sprintf( $reached_limit, $len, 0 );
     }
     my $old_row = 0;
+    my $auto_jump = 1;
     my ( $width ) = term_size();
     while ( 1 ) {
         if ( ( term_size() )[0] != $width ) {
@@ -238,22 +251,52 @@ sub __inner_print_tbl {
             $self->__inner_print_tbl( $a_ref );
             return;
         }
+
+#        my $row = choose(
+#            $list,
+#            { prompt => '', index => 1, default => $old_row, ll => $len, layout => 3,
+#              clear_screen => 1, mouse => $self->{mouse} }
+#        );
+#        return if ! defined $row;
+#        return if $row == 0;
+#        if ( ! $self->{table_expand} ) {
+#            $old_row = 0;
+#            next;
+#        }
+#        if ( $old_row == $row ) {
+#            $old_row = 0;
+#            next;
+#        }
+#        $old_row = $row;
+        ####
+        my $prompt = $self->{keep_header} ? shift @$list : '';
         my $row = choose(
             $list,
-            { prompt => '', index => 1, default => $old_row, ll => $len, layout => 3,
+            { prompt => $prompt, index => 1, default => $old_row, ll => $len, layout => 3,
               clear_screen => 1, mouse => $self->{mouse} }
         );
+        unshift @$list, $prompt if $self->{keep_header};
         return if ! defined $row;
-        return if $row == 0;
         if ( ! $self->{table_expand} ) {
+            return if $row == 0;
+            next;
+        }
+        if ( $old_row == $row && ! $self->{keep_header} ) {
+            return if $row == 0;
             $old_row = 0;
             next;
         }
-        if ( $old_row == $row ) {
+        if ( $old_row == $row && ! $auto_jump ) {
+            return if $row == 0;
             $old_row = 0;
+            $auto_jump = 1;
             next;
         }
+        $auto_jump = 0;
         $old_row = $row;
+        $row++ if $prompt;
+        ####
+
         my $row_data = $self->__single_row( $a_ref, $row, $self->{longest_col_name} + 1 );
         choose(
             $row_data,
@@ -508,7 +551,7 @@ Term::TablePrint - Print a table to the terminal and browse it interactively.
 
 =head1 VERSION
 
-Version 0.010
+Version 0.010_01
 
 =cut
 
@@ -625,7 +668,9 @@ row of the table.
 
 =back
 
-The C<Return> key closes the table if the cursor is on the header row.
+The C<Return> key closes the table if the cursor is on the header row unless I<table_expand> and I<keep_header> are
+enabled. If I<table_expand> and I<keep_header> are enabled, the output closes if C<Return> is pressed twice in
+succession; this special behavior may change (or be removed) in a future release.
 
 If the cursor is not on the header row:
 
@@ -659,6 +704,16 @@ If I<add_header> is set to 1, C<print_table> adds a header row - the columns are
 
 Default: 0
 
+=head3 binary_filter
+
+If I<binary_filter> is set to 1, "BNRY" is printed instead of arbitrary binary data.
+
+If the data matches the repexp C</[\x00-\x08\x0B-\x0C\x0E-\x1F]/>, it is considered arbitrary binary data.
+
+Printing arbitrary binary data could break the output.
+
+Default: 0
+
 =head3 choose_columns
 
 If I<choose_columns> is set to 1, the user can choose which columns to print. The columns can be marked with the
@@ -669,24 +724,13 @@ the C<SpaceBar> and the C<Return> key) until the user confirms with the I<-ok-> 
 
 Default: 0
 
-=head3 tab_width
+=head3 keep_header
 
-Set the number of spaces between columns.
+If I<keep_header> is set to 1, the table header is shown on top of each page.
 
-Default: 2
+If I<keep_header> is set to 0, the table header is shown on top of the first page.
 
-=head3 min_col_width
-
-The columns with a width below or equal I<min_col_width> are only trimmed if it is still required to lower the row width
-despite all columns wider than I<min_col_width> have been trimmed to I<min_col_width>.
-
-Default: 30
-
-=head3 undef
-
-Set the string that will be shown on the screen instead of an undefined field.
-
-Default: "" (empty string)
+Default: 1;
 
 =head3 max_rows
 
@@ -699,12 +743,31 @@ If the number of table rows is equal to or higher than I<max_rows>, the last row
 
 Default: 50_000
 
+=head3 min_col_width
+
+The columns with a width below or equal I<min_col_width> are only trimmed if it is still required to lower the row width
+despite all columns wider than I<min_col_width> have been trimmed to I<min_col_width>.
+
+Default: 30
+
+=head3 mouse
+
+Set the I<mouse> mode (see option C<mouse> in L<Term::Choose/OPTIONS>).
+
+Default: 0
+
 =head3 progress_bar
 
 Set the progress bar threshold. If the number of fields (rows x columns) is higher than the threshold, a progress bar is
 shown while preparing the data for the output.
 
 Default: 20_000
+
+=head3 tab_width
+
+Set the number of spaces between columns.
+
+Default: 2
 
 =head3 table_expand
 
@@ -715,21 +778,11 @@ If I<table_expand> is set to 0, the cursor jumps to the to header row (if not al
 
 Default: 1
 
-=head3 mouse
+=head3 undef
 
-Set the I<mouse> mode (see option C<mouse> in L<Term::Choose/OPTIONS>).
+Set the string that will be shown on the screen instead of an undefined field.
 
-Default: 0
-
-=head3 binary_filter
-
-If I<binary_filter> is set to 1, "BNRY" is printed instead of arbitrary binary data.
-
-If the data matches the repexp C</[\x00-\x08\x0B-\x0C\x0E-\x1F]/>, it is considered arbitrary binary data.
-
-Printing arbitrary binary data could break the output.
-
-Default: 0
+Default: "" (empty string)
 
 =head1 ERROR HANDLING
 

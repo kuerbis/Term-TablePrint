@@ -12,7 +12,7 @@ my $release_date = -1;
 
 
 open my $fh1, '<', 'lib/Term/TablePrint.pm' or die $!;
-while ( my $line = readline $fh1 ) {
+while ( my $line = <$fh1> ) {
     if ( $line =~ /^our\ \$VERSION\ =\ '(\d\.\d\d\d(?:_\d\d)?)';/ ) {
         $v = $1;
     }

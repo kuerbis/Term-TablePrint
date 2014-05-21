@@ -1,6 +1,10 @@
 Revision history for Term::TablePrint
 
 
+0.010_01   2014-05-21
+        - Added option "keep_header".
+        - Update documentation.
+
 0.010   2014-05-04
         - Update documentation.
 
