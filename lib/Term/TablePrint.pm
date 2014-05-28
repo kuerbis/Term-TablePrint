@@ -4,7 +4,7 @@ use warnings;
 use strict;
 use 5.010001;
 
-our $VERSION = '0.010_01';
+our $VERSION = '0.011';
 use Exporter 'import';
 our @EXPORT_OK = qw( print_table );
 
@@ -176,6 +176,7 @@ sub print_table {
         if ( $self->{add_header} ) {
             unshift @$table_ref, [ map { $_ . '_' . $self->{no_col} } 1 .. @{$table_ref->[0]} ];
         }
+        croak "Empty table without header row!" if ! @$table_ref;
         my $last_row_idx = $self->{max_rows} && $self->{max_rows} < @$table_ref ? $self->{max_rows} : $#$table_ref;
         my @copy = ();
         if ( $self->{choose_columns}  ) {
@@ -220,16 +221,6 @@ sub __inner_print_tbl {
     my $width_cols = $self->__calc_avail_width( $a_ref, $term_width );
     return if ! $width_cols;
     my ( $list, $len ) = $self->__trunk_col_to_avail_width( $a_ref, $width_cols );
-
-    ####
-    if ( @$list == 1 && $self->{keep_header} ) {
-        choose(
-            [ "Empty Table!", map { " $_" } @{$a_ref->[0]} ],
-            { prompt => '', clear_screen => 1, layout => 3, mouse => $self->{mouse} }
-        );
-    }
-    ####
-
     if ( $self->{max_rows} && @$list - 1 >= $self->{max_rows} ) {
         my $reached_limit = 'REACHED LIMIT "MAX_ROWS": ' . insert_sep( $self->{max_rows}, $self->{thsd_sep} );
         my $gcs1 = Unicode::GCString->new( $reached_limit );
@@ -242,8 +233,9 @@ sub __inner_print_tbl {
         }
         push @$list, unicode_sprintf( $reached_limit, $len, 0 );
     }
-    my $old_row = 0;
-    my $auto_jump = 1;
+    my $old_row = $self->{keep_header} ? @$list : 0;
+    #my $old_row = 0;
+    #my $auto_jump = 1;
     my ( $width ) = term_size();
     while ( 1 ) {
         if ( ( term_size() )[0] != $width ) {
@@ -251,25 +243,12 @@ sub __inner_print_tbl {
             $self->__inner_print_tbl( $a_ref );
             return;
         }
-
-#        my $row = choose(
-#            $list,
-#            { prompt => '', index => 1, default => $old_row, ll => $len, layout => 3,
-#              clear_screen => 1, mouse => $self->{mouse} }
-#        );
-#        return if ! defined $row;
-#        return if $row == 0;
-#        if ( ! $self->{table_expand} ) {
-#            $old_row = 0;
-#            next;
-#        }
-#        if ( $old_row == $row ) {
-#            $old_row = 0;
-#            next;
-#        }
-#        $old_row = $row;
-        ####
         my $prompt = $self->{keep_header} ? shift @$list : '';
+        if ( ! @$list ) {
+            push @$list, $prompt;
+            $prompt = '';
+            $old_row = 0;
+        }
         my $row = choose(
             $list,
             { prompt => $prompt, index => 1, default => $old_row, ll => $len, layout => 3,
@@ -281,21 +260,29 @@ sub __inner_print_tbl {
             return if $row == 0;
             next;
         }
-        if ( $old_row == $row && ! $self->{keep_header} ) {
+        if ( $old_row == $row ) {
             return if $row == 0;
             $old_row = 0;
             next;
         }
-        if ( $old_row == $row && ! $auto_jump ) {
-            return if $row == 0;
-            $old_row = 0;
-            $auto_jump = 1;
-            next;
-        }
-        $auto_jump = 0;
+        #if ( ! $self->{table_expand} ) {
+        #    return if $row == 0;
+        #    next;
+        #}
+        #if ( $old_row == $row && ! $self->{keep_header} ) {
+        #    return if $row == 0;
+        #    $old_row = 0;
+        #    next;
+        #}
+        #if ( $old_row == $row && ! $auto_jump ) {
+        #    return if $row == 0;
+        #    $old_row = 0;
+        #    $auto_jump = 1;
+        #    next;
+        #}
+        #$auto_jump = 0;
         $old_row = $row;
         $row++ if $prompt;
-        ####
 
         my $row_data = $self->__single_row( $a_ref, $row, $self->{longest_col_name} + 1 );
         choose(
@@ -551,7 +538,7 @@ Term::TablePrint - Print a table to the terminal and browse it interactively.
 
 =head1 VERSION
 
-Version 0.010_01
+Version 0.011
 
 =cut
 
@@ -668,11 +655,11 @@ row of the table.
 
 =back
 
-The C<Return> key closes the table if the cursor is on the header row unless I<table_expand> and I<keep_header> are
-enabled. If I<table_expand> and I<keep_header> are enabled, the output closes if C<Return> is pressed twice in
-succession; this special behavior may change (or be removed) in a future release.
+The C<Return> key closes the table if the cursor is on the header row. If <keep_header> is enabled, the C<Return> key
+closes the table if the pointer jumped automatically to the first row else the table closes by selecting the first row
+twice in succession.
 
-If the cursor is not on the header row:
+If the cursor is not on the first row:
 
 =over
 
@@ -684,7 +671,8 @@ with the option I<table_expand> disabled the cursor jumps to the table head if C
 
 with the option I<table_expand> enabled each column of the selected row is output in its own line preceded by the
 column name if C<Return> is pressed. Another C<Return> closes this output and goes back to the table output. If a row is
-selected twice in succession, the pointer jumps to the head of the table.
+selected twice in succession, the pointer jumps to the head of the table or to the first row if I<keep_header> is
+enabled.
 
 =back
 
@@ -774,7 +762,7 @@ Default: 2
 If the option I<table_expand> is set to 1 and C<Return> is pressed, the selected table row is printed with each column
 in its own line.
 
-If I<table_expand> is set to 0, the cursor jumps to the to header row (if not already there) when C<Return> is pressed.
+If I<table_expand> is set to 0, the cursor jumps to the to first row (if not already there) when C<Return> is pressed.
 
 Default: 1
 
