@@ -1,6 +1,10 @@
 Revision history for Term::TablePrint
 
 
+0.012   2014-05-30
+        - Changed the behavior when "table_expand" and "keep_header" are enabled.
+        - Update documentation.
+
 0.011   2014-05-28
         - Changed behavior when "table_expand" and "keep_header" are enabled.
         - Update documentation.

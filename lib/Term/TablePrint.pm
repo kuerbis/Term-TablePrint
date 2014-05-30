@@ -4,7 +4,7 @@ use warnings;
 use strict;
 use 5.010001;
 
-our $VERSION = '0.011';
+our $VERSION = '0.012';
 use Exporter 'import';
 our @EXPORT_OK = qw( print_table );
 
@@ -167,6 +167,7 @@ sub print_table {
     else {
         croak "print_table: called with " . @_ . " arguments - 1 or 2 arguments expected." if @_ < 1 || @_ > 2;
         croak "print_table: Required an ARRAY reference as the first argument."            if ref $table_ref  ne 'ARRAY';
+        croak "print_table: Empty table without header row!"                               if ! @$table_ref;
         if ( defined $opt ) {
             croak "print_table: The (optional) second argument is not a HASH reference."   if ref $opt ne 'HASH';
             $self->{backup_opt} = { map{ $_ => $self->{$_} } keys %$opt } if defined $opt;
@@ -176,7 +177,6 @@ sub print_table {
         if ( $self->{add_header} ) {
             unshift @$table_ref, [ map { $_ . '_' . $self->{no_col} } 1 .. @{$table_ref->[0]} ];
         }
-        croak "Empty table without header row!" if ! @$table_ref;
         my $last_row_idx = $self->{max_rows} && $self->{max_rows} < @$table_ref ? $self->{max_rows} : $#$table_ref;
         my @copy = ();
         if ( $self->{choose_columns}  ) {
@@ -233,9 +233,9 @@ sub __inner_print_tbl {
         }
         push @$list, unicode_sprintf( $reached_limit, $len, 0 );
     }
-    my $old_row = $self->{keep_header} ? @$list : 0;
-    #my $old_row = 0;
-    #my $auto_jump = 1;
+    #my $old_row = $self->{keep_header} ? @$list : 0;
+    my $old_row = 0;
+    my $auto_jump = 1;
     my ( $width ) = term_size();
     while ( 1 ) {
         if ( ( term_size() )[0] != $width ) {
@@ -256,31 +256,31 @@ sub __inner_print_tbl {
         );
         unshift @$list, $prompt if $self->{keep_header};
         return if ! defined $row;
-        if ( ! $self->{table_expand} ) {
-            return if $row == 0;
-            next;
-        }
-        if ( $old_row == $row ) {
-            return if $row == 0;
-            $old_row = 0;
-            next;
-        }
         #if ( ! $self->{table_expand} ) {
         #    return if $row == 0;
         #    next;
         #}
-        #if ( $old_row == $row && ! $self->{keep_header} ) {
+        #if ( $old_row == $row ) {
         #    return if $row == 0;
         #    $old_row = 0;
         #    next;
         #}
-        #if ( $old_row == $row && ! $auto_jump ) {
-        #    return if $row == 0;
-        #    $old_row = 0;
-        #    $auto_jump = 1;
-        #    next;
-        #}
-        #$auto_jump = 0;
+        if ( ! $self->{table_expand} ) {
+            return if $row == 0;
+            next;
+        }
+        if ( $old_row == $row && ! $self->{keep_header} ) {
+            return if $row == 0;
+            $old_row = 0;
+            next;
+        }
+        if ( $old_row == $row && ! $auto_jump ) {
+            return if $row == 0;
+            $old_row = 0;
+            $auto_jump = 1;
+            next;
+        }
+        $auto_jump = 0;
         $old_row = $row;
         $row++ if $prompt;
 
@@ -538,7 +538,7 @@ Term::TablePrint - Print a table to the terminal and browse it interactively.
 
 =head1 VERSION
 
-Version 0.011
+Version 0.012
 
 =cut
 
@@ -655,9 +655,8 @@ row of the table.
 
 =back
 
-The C<Return> key closes the table if the cursor is on the header row. If <keep_header> is enabled, the C<Return> key
-closes the table if the pointer jumped automatically to the first row else the table closes by selecting the first row
-twice in succession.
+The C<Return> key closes the table if the cursor is on the header row. If I<keep_header> and I<table_expand> are
+enabled, the table closes by selecting the first row twice in succession.
 
 If the cursor is not on the first row:
 
@@ -805,6 +804,8 @@ if an invalid argument is passed.
 if an invalid option value is passed.
 
 =back
+
+if the first argument refers to an empty array.
 
 =head1 REQUIREMENTS
 
