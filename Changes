@@ -1,6 +1,9 @@
 Revision history for Term::TablePrint
 
 
+0.014   2014-07-03
+        - Keep also the old hash key name for some a while.
+
 0.013   2014-07-03
         - Renamed a hash key.
 

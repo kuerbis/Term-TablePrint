@@ -4,7 +4,7 @@ use warnings;
 use strict;
 use 5.010001;
 
-our $VERSION = '0.013';
+our $VERSION = '0.014';
 use Exporter 'import';
 our @EXPORT_OK = qw( print_table );
 
@@ -36,7 +36,7 @@ sub new {
 
 sub __validate_options {
     my ( $self, $opt ) = @_;
-    if ( $opt->{_db_browser_mode} ) {
+    if ( $opt->{_db_browser_mode} || $opt->{db_browser_mode} ) { ###
         %$self = ( %$self, %$opt );
         return;
     }
@@ -160,7 +160,7 @@ sub print_table {
     my $self = shift;
     my ( $table_ref, $opt ) = @_;
     my  $a_ref;
-    if ( $self->{_db_browser_mode} ) {
+    if ( $self->{_db_browser_mode} || $self->{db_browser_mode} ) { ###
         $self->__set_defaults();
         $a_ref = $table_ref;
     }
@@ -538,7 +538,7 @@ Term::TablePrint - Print a table to the terminal and browse it interactively.
 
 =head1 VERSION
 
-Version 0.013
+Version 0.014
 
 =cut
 
