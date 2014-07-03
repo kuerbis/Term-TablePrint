@@ -1,6 +1,9 @@
 Revision history for Term::TablePrint
 
 
+0.013   2014-07-03
+        - Renamed a hash key.
+
 0.012   2014-05-30
         - Changed the behavior when "table_expand" and "keep_header" are enabled.
         - Update documentation.
