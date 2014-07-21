@@ -4,7 +4,7 @@ use warnings;
 use strict;
 use 5.010001;
 
-our $VERSION = '0.014';
+our $VERSION = '0.015';
 use Exporter 'import';
 our @EXPORT_OK = qw( print_table );
 
@@ -538,7 +538,7 @@ Term::TablePrint - Print a table to the terminal and browse it interactively.
 
 =head1 VERSION
 
-Version 0.014
+Version 0.015
 
 =cut
 
@@ -576,8 +576,6 @@ line preceded by the column name. This might be useful if the columns were cut d
 
 To get a proper output C<print_table> uses the C<columns> method from L<Unicode::GCString> to calculate the string
 length.
-
-If STDOUT is redirected C<print_table> prints the table to STDERR.
 
 The following modifications are made (at a copy of the original data) before the output.
 
