@@ -1,6 +1,9 @@
 Revision history for Term::TablePrint
 
 
+0.016   2014-08-16
+        - Perl minimum version from "5.10.1" to "5.10.0".
+
 0.015   2014-07-21
         - Update documentation.
 

@@ -2,9 +2,9 @@ package Term::TablePrint;
 
 use warnings;
 use strict;
-use 5.010001;
+use 5.010000;
 
-our $VERSION = '0.015';
+our $VERSION = '0.016';
 use Exporter 'import';
 our @EXPORT_OK = qw( print_table );
 
@@ -538,7 +538,7 @@ Term::TablePrint - Print a table to the terminal and browse it interactively.
 
 =head1 VERSION
 
-Version 0.015
+Version 0.016
 
 =cut
 
@@ -809,7 +809,7 @@ if the first argument refers to an empty array.
 
 =head2 Perl version
 
-Requires Perl version 5.10.1 or greater.
+Requires Perl version 5.10.0 or greater.
 
 =head2 Decoded strings
 
