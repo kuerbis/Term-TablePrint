@@ -2,9 +2,9 @@ package Term::TablePrint;
 
 use warnings;
 use strict;
-use 5.010000;
+use 5.008000;
 
-our $VERSION = '0.016';
+our $VERSION = '0.017';
 use Exporter 'import';
 our @EXPORT_OK = qw( print_table );
 
@@ -79,18 +79,18 @@ sub __validate_options {
 
 sub __set_defaults {
     my ( $self ) = @_;
-    $self->{progress_bar}   //= 20000;
-    $self->{max_rows}       //= 50000;
-    $self->{tab_width}      //= 2;
-    $self->{min_col_width}  //= 30;
-    $self->{table_expand}   //= 1;
-    $self->{binary_filter}  //= 0;
-    $self->{undef}          //= '';
-    $self->{mouse}          //= 0;
-    $self->{binary_string}  //= 'BNRY';
-    $self->{choose_columns} //= 0;
-    $self->{add_header}     //= 0;
-    $self->{keep_header}    //= 1;
+    $self->{progress_bar}   = 20000  if ! defined $self->{progress_bar};
+    $self->{max_rows}       = 50000  if ! defined $self->{max_rows};
+    $self->{tab_width}      = 2      if ! defined $self->{tab_width};
+    $self->{min_col_width}  = 30     if ! defined $self->{min_col_width};
+    $self->{table_expand}   = 1      if ! defined $self->{table_expand};
+    $self->{binary_filter}  = 0      if ! defined $self->{binary_filter};
+    $self->{undef}          = ''     if ! defined $self->{undef};
+    $self->{mouse}          = 0      if ! defined $self->{mouse};
+    $self->{binary_string}  = 'BNRY' if ! defined $self->{binary_string};
+    $self->{choose_columns} = 0      if ! defined $self->{choose_columns};
+    $self->{add_header}     = 0      if ! defined $self->{add_header};
+    $self->{keep_header}    = 1      if ! defined $self->{keep_header};
     $self->{thsd_sep} = ',';
     $self->{no_col}   = 'col';
 }
@@ -199,7 +199,7 @@ sub print_table {
     my $gcs_bnry = Unicode::GCString->new( $self->{binary_string} );
     $self->{binary_length} = $gcs_bnry->columns;
     if ( $self->{progress_bar} ) {
-        say 'Computing: ...';
+        print 'Computing: ...' . "\n";
         if ( @$a_ref * @{$a_ref->[0]} > $self->{progress_bar} ) {
             $self->{show_progress} = 1;
         }
@@ -337,7 +337,7 @@ sub __calc_col_width {
     my @col_idx = ( 0 .. $#{$a_ref->[0]} );
     for my $row ( @$a_ref ) {
         for my $i ( @col_idx ) {
-            $row->[$i] //= $self->{undef};
+            $row->[$i] = $self->{undef} if ! defined $row->[$i];
             if ( ref $row->[$i] ) {
                 $row->[$i] = $self->__handle_reference( $row->[$i] );
             }
@@ -420,7 +420,7 @@ sub __calc_avail_width {
     elsif ( $sum > $avail_width ) {
         my $minimum_with = $self->{min_col_width} || 1;
         if ( @$width_head > $avail_width ) {
-            say 'Terminal window is not wide enough to print this table.';
+            print 'Terminal window is not wide enough to print this table.' . "\n";
             choose(
                 [ 'Press ENTER to show the column names.' ],
                 { prompt => '', clear_screen => 0, mouse => $self->{mouse} }
@@ -538,7 +538,7 @@ Term::TablePrint - Print a table to the terminal and browse it interactively.
 
 =head1 VERSION
 
-Version 0.016
+Version 0.017
 
 =cut
 
@@ -809,7 +809,7 @@ if the first argument refers to an empty array.
 
 =head2 Perl version
 
-Requires Perl version 5.10.0 or greater.
+Requires Perl version 5.8.0 or greater.
 
 =head2 Decoded strings
 
