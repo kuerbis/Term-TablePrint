@@ -1,6 +1,9 @@
 Revision history for Term::TablePrint
 
 
+0.018   2014-09-20
+        - Show more progressbar if items > threshold * 2.
+
 0.017   2014-09-06
         - Perl minimum version from "5.10.0" to "5.8.0".
         - Update documentation.
