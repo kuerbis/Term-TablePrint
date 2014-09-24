@@ -1,6 +1,10 @@
 Revision history for Term::TablePrint
 
 
+0.018_01   2014-09-24
+        - "print_table": if not colled in void context returns the indexes of the choosen rows.
+        - Update documentation.
+
 0.018   2014-09-20
         - Show more progressbar if items > threshold * 2.
 
