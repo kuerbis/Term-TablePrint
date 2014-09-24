@@ -1,8 +1,12 @@
 Revision history for Term::TablePrint
 
 
+0.019   2014-09-24
+        - Removed the feature added in the last developer release.
+        - Update documentation.
+
 0.018_01   2014-09-24
-        - "print_table": if not colled in void context returns the indexes of the choosen rows.
+        - "print_table": if not called in void context returns the indexes of the chosen rows.
         - Update documentation.
 
 0.018   2014-09-20

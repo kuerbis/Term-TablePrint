@@ -6,7 +6,7 @@ use strict;
 use 5.008000;
 no warnings 'utf8';
 
-our $VERSION = '0.018_01';
+our $VERSION = '0.019';
 use Exporter 'import';
 our @EXPORT_OK = qw( print_table );
 
@@ -206,20 +206,6 @@ sub print_table {
         $self->{show_progress} = int @$a_ref * @{$a_ref->[0]} / $self->{progress_bar};
     }
     $self->__calc_col_width( $a_ref );
-
-    #########################
-    if ( defined wantarray ) {
-        if ( wantarray ) {
-            my @idxs = $self->__inner_print_tbl( $a_ref );
-            return @idxs;
-        }
-        else {
-            my $idx = $self->__inner_print_tbl( $a_ref );
-            return $idx;
-        }
-    }
-    #########################
-
     $self->__inner_print_tbl( $a_ref );
     if ( $self->{backup_opt} ) {
         my $backup_opt = delete $self->{backup_opt};
@@ -248,28 +234,6 @@ sub __inner_print_tbl {
         }
         push @$list, unicode_sprintf( $reached_limit, $len, 0 );
     }
-
-    #########################
-    if ( defined wantarray ) {
-        my $prompt = 'Your choice:';
-        #shift @$list; # The index 0 is the index of the row after the header row.
-        if ( wantarray ) {
-            my @idxs = choose(
-                $list,
-                { prompt => $prompt, index => 1, ll => $len, layout => 3, clear_screen => 1, mouse => $self->{mouse} }
-            );
-            return @idxs;
-        }
-        else {
-            my $idx = choose(
-                $list,
-                { prompt => $prompt, index => 1, ll => $len, layout => 3, clear_screen => 1, mouse => $self->{mouse} }
-            );
-            return $idx;
-        }
-    }
-    #########################
-
     #my $old_row = $self->{keep_header} ? @$list : 0;
     my $old_row = 0;
     my $auto_jump = 1;
@@ -596,7 +560,7 @@ Term::TablePrint - Print a table to the terminal and browse it interactively.
 
 =head1 VERSION
 
-Version 0.018_01
+Version 0.019
 
 =cut
 
@@ -630,19 +594,8 @@ cursor reaches the topmost line, the previous page is shown automatically if it 
 
 If the terminal is too narrow to print the table, the columns are adjusted to the available width automatically.
 
-=head3 print_table called in void context.
-
-If the option I<table_expand> is enabled and a row is selected with C<Return>, each column of that row is output in its
-own line preceded by the column name. This might be useful if the columns were cut due to the too low terminal width.
-
-=head3 print_table called in scalar context.
-
-If a row is selected with C<Return>, C<print_table> returns the index of that row.
-
-=head3 print_table called in list context.
-
-In list context it can be marked rows with the C<SpaceBar>. When C<Return> is pressed C<print_table> returns the indexes
-of the marked row including the highlighted row.
+If the option table_expand is enabled and a row is selected with Return, each column of that row is output in its own
+line preceded by the column name. This might be useful if the columns were cut due to the too low terminal width.
 
 To get a proper output C<print_table> uses the C<columns> method from L<Unicode::GCString> to calculate the string
 length.
