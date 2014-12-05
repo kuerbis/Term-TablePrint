@@ -6,7 +6,7 @@ use strict;
 use 5.008000;
 no warnings 'utf8';
 
-our $VERSION = '0.019';
+our $VERSION = '0.020';
 use Exporter 'import';
 our @EXPORT_OK = qw( print_table );
 
@@ -318,7 +318,7 @@ sub __single_row {
         }
         else {
             my $text = $line_fold->fold( $a_ref->[$row][$col], 'PLAIN' );
-            for my $line ( split /\R+/, $text ) {
+            for my $line ( split /(?>\x0D\x0A|\v)+/, $text ) { # \R requires 5.10.0 or greater
                 push @{$row_data}, sprintf "%*.*s%*s%s", $len_key, $len_key, $key, $len_sep, $sep, $line;
                 $key = '' if $key;
                 $sep = '' if $sep;
@@ -560,7 +560,7 @@ Term::TablePrint - Print a table to the terminal and browse it interactively.
 
 =head1 VERSION
 
-Version 0.019
+Version 0.020
 
 =cut
 

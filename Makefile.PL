@@ -34,7 +34,7 @@ WriteMakefile(
         'List::Util'           => 0,
         'Scalar::Util'         => 0,
         'Term::Choose'         => 0,
-        'Term::Choose::Util'   => '0.016',
+        'Term::Choose::Util'   => '0.018',
         'Term::ProgressBar'    => 0,
         'Text::LineFold'       => 0,
         'Unicode::GCString'    => 0,
