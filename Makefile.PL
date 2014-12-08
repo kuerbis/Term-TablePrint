@@ -1,4 +1,4 @@
-use 5.008000;
+use 5.008003;
 use warnings;
 use strict;
 use ExtUtils::MakeMaker;
@@ -6,7 +6,7 @@ use ExtUtils::MakeMaker;
 
 WriteMakefile(
     PL_FILES         => {},
-    MIN_PERL_VERSION => '5.008000',
+    MIN_PERL_VERSION => '5.008003',
     LICENSE          => 'perl',
     META_MERGE => {
         'meta-spec' => { version => 2 },
@@ -34,7 +34,7 @@ WriteMakefile(
         'List::Util'           => 0,
         'Scalar::Util'         => 0,
         'Term::Choose'         => 0,
-        'Term::Choose::Util'   => '0.018',
+        'Term::Choose::Util'   => '0.019',
         'Term::ProgressBar'    => 0,
         'Text::LineFold'       => 0,
         'Unicode::GCString'    => 0,

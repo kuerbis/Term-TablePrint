@@ -3,10 +3,10 @@ package Term::TablePrint;
 
 use warnings;
 use strict;
-use 5.008000;
+use 5.008003;
 no warnings 'utf8';
 
-our $VERSION = '0.020';
+our $VERSION = '0.021';
 use Exporter 'import';
 our @EXPORT_OK = qw( print_table );
 
@@ -318,7 +318,7 @@ sub __single_row {
         }
         else {
             my $text = $line_fold->fold( $a_ref->[$row][$col], 'PLAIN' );
-            for my $line ( split /(?>\x0D\x0A|\v)+/, $text ) { # \R requires 5.10.0 or greater
+            for my $line ( split /\n+/, $text ) {
                 push @{$row_data}, sprintf "%*.*s%*s%s", $len_key, $len_key, $key, $len_sep, $sep, $line;
                 $key = '' if $key;
                 $sep = '' if $sep;
@@ -560,7 +560,7 @@ Term::TablePrint - Print a table to the terminal and browse it interactively.
 
 =head1 VERSION
 
-Version 0.020
+Version 0.021
 
 =cut
 
@@ -832,7 +832,7 @@ if the first argument refers to an empty array.
 
 =head2 Perl version
 
-Requires Perl version 5.8.0 or greater.
+Requires Perl version 5.8.3 or greater.
 
 =head2 Decoded strings
 

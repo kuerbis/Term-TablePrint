@@ -1,6 +1,11 @@
 Revision history for Term::TablePrint
 
 
+0.021   2014-12-08
+        - Perl minimum version: "5.8.3".
+        - Replaced "\v" ("v" not yet available in Perl 5.8.3).
+        - "Term::Choose::Util": minimum version "0.019".
+
 0.020   2014-12-05
         - Replaced "\R" ("\R" not yet available in Perl 5.8.0).
         - "Term::Choose::Util": minimum version "0.018".
