@@ -6,7 +6,7 @@ use strict;
 use 5.008003;
 no warnings 'utf8';
 
-our $VERSION = '0.021';
+our $VERSION = '0.022';
 use Exporter 'import';
 our @EXPORT_OK = qw( print_table );
 
@@ -39,10 +39,6 @@ sub new {
 
 sub __validate_options {
     my ( $self, $opt ) = @_;
-    if ( $opt->{_db_browser_mode} || $opt->{db_browser_mode} ) { ###
-        %$self = ( %$self, %$opt );
-        return;
-    }
     my $valid = {
         progress_bar    => '[ 0-9 ]+',
         max_rows        => '[ 0-9 ]+',
@@ -59,7 +55,6 @@ sub __validate_options {
         #thsd_sep       => '',
         #no_col         => '',
     };
-
     for my $key ( keys %$opt ) {
         if ( ! exists $valid->{$key} ) {
             carp "print_table: '$key' is not a valid option name.";
@@ -118,7 +113,7 @@ sub __choose_columns_with_order {
             { prompt => $prompt, lf => [ 0, $s_tab ], clear_screen => 1,
               no_spacebar => [ 0 .. $#pre ], index => 1, mouse => $self->{mouse} }
         );
-        if ( ! @idx || ! defined $choices->[$idx[0]] ) {
+        if ( ! @idx || ! defined $choices->[$idx[0]] ) { #
             if ( @$col_idxs ) {
                 $col_idxs = [];
                 next;
@@ -148,7 +143,9 @@ sub __choose_columns_simple {
         $choices,
         { prompt => 'Choose: ', no_spacebar => [ 0 .. $#pre ], index => 1, mouse => $self->{mouse} }
     );
-    return if ! @idx;
+    if ( ! @idx ) {
+        return;
+    }
     if ( $choices->[$idx[0]] eq $all ) {
         return [];
     }
@@ -162,42 +159,32 @@ sub print_table {
     }
     my $self = shift;
     my ( $table_ref, $opt ) = @_;
-    my  $a_ref;
-    if ( $self->{_db_browser_mode} || $self->{db_browser_mode} ) { ###
-        $self->__set_defaults();
-        $a_ref = $table_ref;
+    croak "print_table: called with " . @_ . " arguments - 1 or 2 arguments expected." if @_ < 1 || @_ > 2;
+    croak "print_table: Required an ARRAY reference as the first argument."            if ref $table_ref  ne 'ARRAY';
+    croak "print_table: Empty table without header row!"                               if ! @$table_ref;
+    if ( defined $opt ) {
+        croak "print_table: The (optional) second argument is not a HASH reference."   if ref $opt ne 'HASH';
+        $self->{backup_opt} = { map{ $_ => $self->{$_} } keys %$opt };
+        $self->__validate_options( $opt );
+    }
+    $self->__set_defaults();
+    if ( $self->{add_header} ) {
+        unshift @$table_ref, [ map { $_ . '_' . $self->{no_col} } 1 .. @{$table_ref->[0]} ];
+    }
+    my $last_row_idx = $self->{max_rows} && $self->{max_rows} < @$table_ref ? $self->{max_rows} : $#$table_ref;
+    my $col_idxs = [];
+    if ( $self->{choose_columns}  ) {
+        $col_idxs = $self->__choose_columns_simple( $table_ref->[0] )     if $self->{choose_columns} == 1;
+        $col_idxs = $self->__choose_columns_with_order( $table_ref->[0] ) if $self->{choose_columns} == 2;
+        return if ! defined $col_idxs;
+    }
+    my $a_ref = [];
+    if ( @$col_idxs ) {
+        $a_ref = [ map { [ @{$table_ref->[$_]}[@$col_idxs] ] } 0 .. $last_row_idx ];
     }
     else {
-        croak "print_table: called with " . @_ . " arguments - 1 or 2 arguments expected." if @_ < 1 || @_ > 2;
-        croak "print_table: Required an ARRAY reference as the first argument."            if ref $table_ref  ne 'ARRAY';
-        croak "print_table: Empty table without header row!"                               if ! @$table_ref;
-        if ( defined $opt ) {
-            croak "print_table: The (optional) second argument is not a HASH reference."   if ref $opt ne 'HASH';
-            $self->{backup_opt} = { map{ $_ => $self->{$_} } keys %$opt } if defined $opt;
-            $self->__validate_options( $opt );
-        }
-        $self->__set_defaults();
-        if ( $self->{add_header} ) {
-            unshift @$table_ref, [ map { $_ . '_' . $self->{no_col} } 1 .. @{$table_ref->[0]} ];
-        }
-        my $last_row_idx = $self->{max_rows} && $self->{max_rows} < @$table_ref ? $self->{max_rows} : $#$table_ref;
-        my @copy = ();
-        if ( $self->{choose_columns}  ) {
-            my $col_idxs;
-            $col_idxs = $self->__choose_columns_simple( $table_ref->[0] )     if $self->{choose_columns} == 1;
-            $col_idxs = $self->__choose_columns_with_order( $table_ref->[0] ) if $self->{choose_columns} == 2;
-            return if ! defined $col_idxs;
-            if ( @$col_idxs ) {
-                @copy = map { [ @{$table_ref->[$_]}[@$col_idxs] ] } 0 .. $last_row_idx;
-            }
-        }
-        if ( @copy ) {
-            $a_ref = \@copy;
-        }
-        else {
-            $a_ref = $table_ref;
-            $#$a_ref = $last_row_idx;
-        }
+        $a_ref = $table_ref;
+        $#$a_ref = $last_row_idx;
     }
     my $gcs_bnry = Unicode::GCString->new( $self->{binary_string} );
     $self->{binary_length} = $gcs_bnry->columns;
@@ -234,9 +221,8 @@ sub __inner_print_tbl {
         }
         push @$list, unicode_sprintf( $reached_limit, $len, 0 );
     }
-    #my $old_row = $self->{keep_header} ? @$list : 0;
     my $old_row = 0;
-    my $auto_jump = 1;
+    my $auto_jumped_to_first_row = 1;
     my ( $width ) = term_size();
     while ( 1 ) {
         if ( ( term_size() )[0] != $width ) {
@@ -250,42 +236,40 @@ sub __inner_print_tbl {
             $prompt = '';
             $old_row = 0;
         }
+        # Choose
         my $row = choose(
             $list,
             { prompt => $prompt, index => 1, default => $old_row, ll => $len, layout => 3,
               clear_screen => 1, mouse => $self->{mouse} }
         );
-        unshift @$list, $prompt if $self->{keep_header};
-        return if ! defined $row;
-        #if ( ! $self->{table_expand} ) {
-        #    return if $row == 0;
-        #    next;
-        #}
-        #if ( $old_row == $row ) {
-        #    return if $row == 0;
-        #    $old_row = 0;
-        #    next;
-        #}
+        if ( ! defined $row ) {
+            return;
+        }
+        if ( $self->{keep_header} ) {
+            unshift @$list, $prompt;
+        }
         if ( ! $self->{table_expand} ) {
             return if $row == 0;
             next;
         }
-        if ( $old_row == $row && ! $self->{keep_header} ) {
-            return if $row == 0;
-            $old_row = 0;
-            next;
+        if ( $old_row == $row ) {
+            if ( $row == 0 ) {
+                return if ! $self->{keep_header};
+                return if ! $auto_jumped_to_first_row;
+                $auto_jumped_to_first_row = 0;
+            }
+            else {
+                $old_row = 0;
+                $auto_jumped_to_first_row = 1;
+                next;
+            }
         }
-        if ( $old_row == $row && ! $auto_jump ) {
-            return if $row == 0;
-            $old_row = 0;
-            $auto_jump = 1;
-            next;
-        }
-        $auto_jump = 0;
         $old_row = $row;
-        $row++ if $prompt;
-
+        if ( $self->{keep_header} ) {
+            $row++;
+        }
         my $row_data = $self->__single_row( $a_ref, $row, $self->{longest_col_name} + 1 );
+        # Choose
         choose(
             $row_data,
             { prompt => '', layout => 3, clear_screen => 1, mouse => $self->{mouse} }
@@ -331,11 +315,6 @@ sub __single_row {
 
 sub __calc_col_width {
     my ( $self, $a_ref ) = @_;
-    my $binray_regexp = qr/[\x00-\x08\x0B-\x0C\x0E-\x1F]/;
-    $self->{longest_col_name} = 0;
-    my $normal_row = 0;
-    $self->{width_cols} = [ ( 1 ) x @{$a_ref->[0]} ];
-    my @col_idx = ( 0 .. $#{$a_ref->[0]} );
     my $show_progress = $self->{show_progress} >= 2 ? 1 : 0; #
     my $total = $#{$a_ref};                   #
     my $next_update = 0;                      #
@@ -350,9 +329,18 @@ sub __calc_col_width {
             remove => 1 } );                  #
         $progress->minor( 0 );                #
     }                                         #
+
+    my $binray_regexp = qr/[\x00-\x08\x0B-\x0C\x0E-\x1F]/;
+    $self->{longest_col_name} = 0;
+    $self->{width_cols} = [ ( 1 ) x @{$a_ref->[0]} ];
+    my $normal_row = 0;
+    my @col_idx = ( 0 .. $#{$a_ref->[0]} );
+
     for my $row ( @$a_ref ) {
         for my $i ( @col_idx ) {
-            $row->[$i] = $self->{undef} if ! defined $row->[$i];
+            if ( ! defined $row->[$i] ) {
+                $row->[$i] = $self->{undef};
+            }
             if ( ref $row->[$i] ) {
                 $row->[$i] = $self->__handle_reference( $row->[$i] );
             }
@@ -371,20 +359,30 @@ sub __calc_col_width {
                 $width = $gcs->columns;
             }
             if ( $normal_row ) {
-                $self->{width_cols}[$i] = $width if $width > $self->{width_cols}[$i];
-                ++$self->{not_a_number}[$i] if $row->[$i] && ! looks_like_number $row->[$i];
+                if ( $width > $self->{width_cols}[$i] ) {
+                    $self->{width_cols}[$i] = $width;
+                }
+                if ( $row->[$i] && ! looks_like_number $row->[$i] ) {
+                    ++$self->{not_a_number}[$i];
+                }
             }
             else {
                 # column name
                 $self->{width_head}[$i] = $width;
-                $self->{longest_col_name} = $width if $width > $self->{longest_col_name};
-                $normal_row = 1 if $i == $#$row;
+                if ( $width > $self->{longest_col_name} ) {
+                    $self->{longest_col_name} = $width;
+                }
+                if ( $i == $#$row ) {
+                    $normal_row = 1;
+                }
             }
         }
         if ( $show_progress ) {                                              #
             my $is_power = 0;                                                #
             for ( my $i = 0; 2 ** $i <= $c; ++$i ) {                         #
-                $is_power = 1 if 2 ** $i == $c;                              #
+                if ( 2 ** $i == $c ) {                                       #
+                    $is_power = 1;                                           #
+                }                                                            #
             }                                                                #
             $next_update = $progress->update( $c ) if $c >= $next_update;    #
             ++$c;                                                            #
@@ -439,7 +437,7 @@ sub __calc_avail_width {
             last HEAD if $count == 0;
             $sum += $count;
         }
-        return $width_head, $width_cols;
+        return $width_cols;
     }
     elsif ( $sum > $avail_width ) {
         my $minimum_with = $self->{min_col_width} || 1;
@@ -464,7 +462,9 @@ sub __calc_avail_width {
             ++$percent;
             my $count = 0;
             for my $i ( 0 .. $#width_cols_tmp ) {
-                next if $minimum_with >= $width_cols_tmp[$i];
+                if ( $minimum_with >= $width_cols_tmp[$i] ) {
+                    next;
+                }
                 if ( $minimum_with >= _minus_x_percent( $width_cols_tmp[$i], $percent ) ) {
                     $width_cols_tmp[$i] = $minimum_with;
                 }
@@ -560,7 +560,7 @@ Term::TablePrint - Print a table to the terminal and browse it interactively.
 
 =head1 VERSION
 
-Version 0.021
+Version 0.022
 
 =cut
 
@@ -867,7 +867,7 @@ Matthäus Kiem <cuer2s@gmail.com>
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright 2012-2014 Matthäus Kiem.
+Copyright 2012-2015 Matthäus Kiem.
 
 This library is free software; you can redistribute it and/or modify it under the same terms as Perl 5.10.0. For
 details, see the full text of the licenses in the file LICENSE.
