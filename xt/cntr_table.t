@@ -8,6 +8,9 @@ my $file = 'lib/Term/TablePrint.pm';
 my $test_env = 0;
 open my $fh1, '<', $file or die $!;
 while ( my $line = <$fh1> ) {
+    if ( $line =~ /\$\s*SIG\s*{\s*__WARN__\s*}/ ) {
+        $test_env++;
+    }
     if ( $line =~ /^\s*use\s+warnings\s+FATAL/s ) {
         $test_env++;
     }

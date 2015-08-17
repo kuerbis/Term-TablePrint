@@ -1,4 +1,3 @@
-
 package Term::TablePrint;
 
 use warnings;
@@ -6,7 +5,7 @@ use strict;
 use 5.008003;
 no warnings 'utf8';
 
-our $VERSION = '0.022';
+our $VERSION = '0.023';
 use Exporter 'import';
 our @EXPORT_OK = qw( print_table );
 
@@ -20,7 +19,7 @@ use Term::ProgressBar  qw();
 use Text::LineFold     qw();
 use Unicode::GCString  qw();
 
-sub CLEAR_SCREEN () { "\e[H\e[J" }
+use constant CLEAR_SCREEN => "\e[H\e[J";
 
 
 
@@ -47,7 +46,7 @@ sub __validate_options {
         binary_filter   => '[ 0 1 ]',
         add_header      => '[ 0 1 ]',
         keep_header     => '[ 0 1 ]',
-        table_expand    => '[ 0 1 ]',
+        table_expand    => '[ 0 1 2 ]',
         choose_columns  => '[ 0 1 2 ]',
         mouse           => '[ 0 1 2 3 4 ]',
         binary_string   => '',
@@ -222,7 +221,8 @@ sub __inner_print_tbl {
         push @$list, unicode_sprintf( $reached_limit, $len, 0 );
     }
     my $old_row = 0;
-    my $auto_jumped_to_first_row = 1;
+    my $auto_jumped_to_first_row = 2;
+    my $expanded = 0;
     my ( $width ) = term_size();
     while ( 1 ) {
         if ( ( term_size() )[0] != $width ) {
@@ -232,7 +232,7 @@ sub __inner_print_tbl {
         }
         my $prompt = $self->{keep_header} ? shift @$list : '';
         if ( ! @$list ) {
-            push @$list, $prompt;
+            $list = [ $prompt ];
             $prompt = '';
             $old_row = 0;
         }
@@ -242,12 +242,8 @@ sub __inner_print_tbl {
             { prompt => $prompt, index => 1, default => $old_row, ll => $len, layout => 3,
               clear_screen => 1, mouse => $self->{mouse} }
         );
-        if ( ! defined $row ) {
-            return;
-        }
-        if ( $self->{keep_header} ) {
-            unshift @$list, $prompt;
-        }
+        return if ! defined $row;
+        unshift @$list, $prompt if $self->{keep_header};
         if ( ! $self->{table_expand} ) {
             return if $row == 0;
             next;
@@ -255,7 +251,13 @@ sub __inner_print_tbl {
         if ( $old_row == $row ) {
             if ( $row == 0 ) {
                 return if ! $self->{keep_header};
-                return if ! $auto_jumped_to_first_row;
+                if ( $self->{table_expand} == 1 ) {
+                    return if $expanded;
+                    return if $auto_jumped_to_first_row == 1;
+                }
+                elsif ( $self->{table_expand} == 2 ) {
+                    return if $expanded;
+                }
                 $auto_jumped_to_first_row = 0;
             }
             else {
@@ -263,11 +265,13 @@ sub __inner_print_tbl {
                 $auto_jumped_to_first_row = 1;
                 next;
             }
+            $expanded = 1;
+        }
+        else {
+            $expanded = 0;
         }
         $old_row = $row;
-        if ( $self->{keep_header} ) {
-            $row++;
-        }
+        $row++ if $self->{keep_header};
         my $row_data = $self->__single_row( $a_ref, $row, $self->{longest_col_name} + 1 );
         # Choose
         choose(
@@ -560,7 +564,7 @@ Term::TablePrint - Print a table to the terminal and browse it interactively.
 
 =head1 VERSION
 
-Version 0.022
+Version 0.023
 
 =cut
 
@@ -676,8 +680,14 @@ row of the table.
 
 =back
 
-The C<Return> key closes the table if the cursor is on the header row. If I<keep_header> and I<table_expand> are
-enabled, the table closes by selecting the first row twice in succession.
+With I<keep_header> disabled the C<Return> key closes the table if the cursor is on the header row.
+
+If I<keep_header> is enabled and I<table_expand> is set to C<0>, the C<Return> key closes the table if the cursor is on
+the first row.
+
+If I<keep_header> and I<table_expand> are enabled and the cursor is on the first row, pressing C<Return> three times in
+succession closes the table. If I<table_expand> is set to C<1> and the cursor is auto-jumped to the first row, it is
+required only one C<Return> to close the table.
 
 If the cursor is not on the first row:
 
@@ -779,8 +789,9 @@ Default: 2
 
 =head3 table_expand
 
-If the option I<table_expand> is set to 1 and C<Return> is pressed, the selected table row is printed with each column
-in its own line.
+If the option I<table_expand> is set to C<1> or C<2> and C<Return> is pressed, the selected table row is printed with
+each column in its own line. Exception: if I<table_expand> is set to C<1> and the cursor auto-jumped to the first row,
+the first row will not be expanded.
 
 If I<table_expand> is set to 0, the cursor jumps to the to first row (if not already there) when C<Return> is pressed.
 

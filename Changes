@@ -1,6 +1,10 @@
 Revision history for Term::TablePrint
 
 
+0.023   2015-08-17
+        - Use constant.
+        - The option "table_expand" has now 3 different settings. The default behavior of this option has changed.
+
 0.022   2015-01-25
         - Code refactoring.
         - Update year copyright.
