@@ -5,7 +5,7 @@ use strict;
 use 5.008003;
 no warnings 'utf8';
 
-our $VERSION = '0.023';
+our $VERSION = '0.024';
 use Exporter 'import';
 our @EXPORT_OK = qw( print_table );
 
@@ -250,8 +250,10 @@ sub __inner_print_tbl {
         }
         if ( $old_row == $row ) {
             if ( $row == 0 ) {
-                return if ! $self->{keep_header};
-                if ( $self->{table_expand} == 1 ) {
+                if ( ! $self->{keep_header} ) {
+                    return;
+                }
+                elsif ( $self->{table_expand} == 1 ) {
                     return if $expanded;
                     return if $auto_jumped_to_first_row == 1;
                 }
@@ -263,15 +265,13 @@ sub __inner_print_tbl {
             else {
                 $old_row = 0;
                 $auto_jumped_to_first_row = 1;
+                $expanded = 0;
                 next;
             }
-            $expanded = 1;
-        }
-        else {
-            $expanded = 0;
         }
         $old_row = $row;
         $row++ if $self->{keep_header};
+        $expanded = 1;
         my $row_data = $self->__single_row( $a_ref, $row, $self->{longest_col_name} + 1 );
         # Choose
         choose(
@@ -564,7 +564,7 @@ Term::TablePrint - Print a table to the terminal and browse it interactively.
 
 =head1 VERSION
 
-Version 0.023
+Version 0.024
 
 =cut
 
