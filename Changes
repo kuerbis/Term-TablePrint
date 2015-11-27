@@ -1,6 +1,9 @@
 Revision history for Term::TablePrint
 
 
+0.025   2015-11-27
+        - New option "prompt".
+
 0.024   2015-08-17
         - Bugfix "table_expand".
 

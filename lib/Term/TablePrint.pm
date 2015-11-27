@@ -5,7 +5,7 @@ use strict;
 use 5.008003;
 no warnings 'utf8';
 
-our $VERSION = '0.024';
+our $VERSION = '0.025';
 use Exporter 'import';
 our @EXPORT_OK = qw( print_table );
 
@@ -39,17 +39,18 @@ sub new {
 sub __validate_options {
     my ( $self, $opt ) = @_;
     my $valid = {
-        progress_bar    => '[ 0-9 ]+',
         max_rows        => '[ 0-9 ]+',
         min_col_width   => '[ 0-9 ]+',
+        progress_bar    => '[ 0-9 ]+',
         tab_width       => '[ 0-9 ]+',
-        binary_filter   => '[ 0 1 ]',
         add_header      => '[ 0 1 ]',
+        binary_filter   => '[ 0 1 ]',
         keep_header     => '[ 0 1 ]',
-        table_expand    => '[ 0 1 2 ]',
         choose_columns  => '[ 0 1 2 ]',
+        table_expand    => '[ 0 1 2 ]',
         mouse           => '[ 0 1 2 3 4 ]',
         binary_string   => '',
+        prompt          => '',
         undef           => '',
         #thsd_sep       => '',
         #no_col         => '',
@@ -76,18 +77,19 @@ sub __validate_options {
 
 sub __set_defaults {
     my ( $self ) = @_;
-    $self->{progress_bar}   = 40000  if ! defined $self->{progress_bar};
-    $self->{max_rows}       = 50000  if ! defined $self->{max_rows};
-    $self->{tab_width}      = 2      if ! defined $self->{tab_width};
-    $self->{min_col_width}  = 30     if ! defined $self->{min_col_width};
-    $self->{table_expand}   = 1      if ! defined $self->{table_expand};
+    $self->{add_header}     = 0      if ! defined $self->{add_header};
     $self->{binary_filter}  = 0      if ! defined $self->{binary_filter};
-    $self->{undef}          = ''     if ! defined $self->{undef};
-    $self->{mouse}          = 0      if ! defined $self->{mouse};
     $self->{binary_string}  = 'BNRY' if ! defined $self->{binary_string};
     $self->{choose_columns} = 0      if ! defined $self->{choose_columns};
-    $self->{add_header}     = 0      if ! defined $self->{add_header};
     $self->{keep_header}    = 1      if ! defined $self->{keep_header};
+    $self->{max_rows}       = 50000  if ! defined $self->{max_rows};
+    $self->{min_col_width}  = 30     if ! defined $self->{min_col_width};
+    $self->{mouse}          = 0      if ! defined $self->{mouse};
+    $self->{progress_bar}   = 40000  if ! defined $self->{progress_bar};
+    $self->{prompt}         = ''     if ! defined $self->{prompt};
+    $self->{tab_width}      = 2      if ! defined $self->{tab_width};
+    $self->{table_expand}   = 1      if ! defined $self->{table_expand};
+    $self->{undef}          = ''     if ! defined $self->{undef};
     $self->{thsd_sep} = ',';
     $self->{no_col}   = 'col';
 }
@@ -235,6 +237,9 @@ sub __inner_print_tbl {
             $list = [ $prompt ];
             $prompt = '';
             $old_row = 0;
+        }
+        if ( length $self->{prompt} ) {
+            $prompt = $self->{prompt} . "\n" . $prompt;
         }
         # Choose
         my $row = choose(
@@ -564,7 +569,7 @@ Term::TablePrint - Print a table to the terminal and browse it interactively.
 
 =head1 VERSION
 
-Version 0.024
+Version 0.025
 
 =cut
 
@@ -715,6 +720,10 @@ see option L</choose_columns>.
 =head2 OPTIONS
 
 Defaults may change in a future release.
+
+=head3 prompt
+
+String displayed above the table.
 
 =head3 add_header
 
