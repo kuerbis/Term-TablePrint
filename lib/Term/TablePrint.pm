@@ -5,7 +5,7 @@ use strict;
 use 5.008003;
 no warnings 'utf8';
 
-our $VERSION = '0.025';
+our $VERSION = '0.026';
 use Exporter 'import';
 our @EXPORT_OK = qw( print_table );
 
@@ -325,7 +325,7 @@ sub __single_row {
 sub __calc_col_width {
     my ( $self, $a_ref ) = @_;
     my $show_progress = $self->{show_progress} >= 2 ? 1 : 0; #
-    my $total = $#{$a_ref};                   #
+    my $total = @$a_ref;                      #
     my $next_update = 0;                      #
     my $c = 0;                                #
     my $progress;                             #
@@ -387,12 +387,6 @@ sub __calc_col_width {
             }
         }
         if ( $show_progress ) {                                              #
-            my $is_power = 0;                                                #
-            for ( my $i = 0; 2 ** $i <= $c; ++$i ) {                         #
-                if ( 2 ** $i == $c ) {                                       #
-                    $is_power = 1;                                           #
-                }                                                            #
-            }                                                                #
             $next_update = $progress->update( $c ) if $c >= $next_update;    #
             ++$c;                                                            #
         }                                                                    #
@@ -516,7 +510,7 @@ sub _minus_x_percent {
 
 sub __trunk_col_to_avail_width {
     my ( $self, $a_ref, $width_cols ) = @_;
-    my $total = $#{$a_ref};                   #
+    my $total = @$a_ref;                      #
     my $next_update = 0;                      #
     my $c = 0;                                #
     my $progress;                             #
@@ -539,10 +533,6 @@ sub __trunk_col_to_avail_width {
         }
         push @$list, $str;
         if ( $self->{show_progress} ) {                                      #
-            my $is_power = 0;                                                #
-            for ( my $i = 0; 2 ** $i <= $c; ++$i ) {                         #
-                $is_power = 1 if 2 ** $i == $c;                              #
-            }                                                                #
             $next_update = $progress->update( $c ) if $c >= $next_update;    #
             ++$c;                                                            #
         }                                                                    #
@@ -569,7 +559,7 @@ Term::TablePrint - Print a table to the terminal and browse it interactively.
 
 =head1 VERSION
 
-Version 0.025
+Version 0.026
 
 =cut
 
@@ -887,7 +877,7 @@ Matthäus Kiem <cuer2s@gmail.com>
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright 2012-2015 Matthäus Kiem.
+Copyright 2013-2016 Matthäus Kiem.
 
 This library is free software; you can redistribute it and/or modify it under the same terms as Perl 5.10.0. For
 details, see the full text of the licenses in the file LICENSE.
