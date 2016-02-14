@@ -5,7 +5,7 @@ use strict;
 use 5.008003;
 no warnings 'utf8';
 
-our $VERSION = '0.026';
+our $VERSION = '0.026_01';
 use Exporter 'import';
 our @EXPORT_OK = qw( print_table );
 
@@ -13,11 +13,10 @@ use Carp         qw( carp croak );
 use List::Util   qw( sum );
 use Scalar::Util qw( looks_like_number );
 
-use Term::Choose       qw( choose );
-use Term::Choose::Util qw( term_size insert_sep unicode_sprintf );
-use Term::ProgressBar  qw();
-use Text::LineFold     qw();
-use Unicode::GCString  qw();
+use Term::Choose           qw( choose );
+use Term::Choose::LineFold qw( line_fold cut_to_printwidth print_columns );
+use Term::Choose::Util     qw( term_size insert_sep unicode_sprintf );
+use Term::ProgressBar      qw();
 
 use constant CLEAR_SCREEN => "\e[H\e[J";
 
@@ -101,11 +100,10 @@ sub __choose_columns_with_order {
     my $ok = '-ok-';
     my @pre = ( $ok );
     my $init_prompt = 'Columns: ';
-    my $gcs = Unicode::GCString->new( $init_prompt );
-    my $s_tab = $gcs->columns();
+    my $s_tab = print_columns( $init_prompt );
 
     while ( 1 ) {
-        my @chosen_cols = @$col_idxs ? map( $avail_cols->[$_], @$col_idxs ) : '*';
+        my @chosen_cols = @$col_idxs ?  @{$avail_cols}[@$col_idxs] : '*';
         my $prompt = $init_prompt . join ', ', @chosen_cols;
         my $choices = [ @pre, @$avail_cols ];
         # Choose
@@ -185,10 +183,11 @@ sub print_table {
     }
     else {
         $a_ref = $table_ref;
-        $#$a_ref = $last_row_idx;
+        if ( $last_row_idx < $#$table_ref ) {
+            $#$a_ref = $last_row_idx;
+        }
     }
-    my $gcs_bnry = Unicode::GCString->new( $self->{binary_string} );
-    $self->{binary_length} = $gcs_bnry->columns;
+    $self->{binray_regexp} = qr/[\x00-\x08\x0B-\x0C\x0E-\x1F]/;
     if ( $self->{progress_bar} ) {
         print 'Computing: ...' . "\n";
         $self->{show_progress} = int @$a_ref * @{$a_ref->[0]} / $self->{progress_bar};
@@ -208,17 +207,13 @@ sub __inner_print_tbl {
     my ( $self, $a_ref ) = @_;
     my ( $term_width ) = term_size();
     my $width_cols = $self->__calc_avail_width( $a_ref, $term_width );
-    return if ! $width_cols;
     my ( $list, $len ) = $self->__trunk_col_to_avail_width( $a_ref, $width_cols );
     if ( $self->{max_rows} && @$list - 1 >= $self->{max_rows} ) {
-        my $reached_limit = 'REACHED LIMIT "MAX_ROWS": ' . insert_sep( $self->{max_rows}, $self->{thsd_sep} );
-        my $gcs1 = Unicode::GCString->new( $reached_limit );
-        if ( $gcs1->columns > $len ) {
-            $reached_limit = 'REACHED LIMIT';
-            my $gcs2 = Unicode::GCString->new( $reached_limit );
-            if ( $gcs2->columns > $len ) {
-                $reached_limit = '=LIMIT=';
-            }
+        my $limit = insert_sep( $self->{max_rows}, $self->{thsd_sep} );
+        my $reached_limit = 'REACHED LIMIT "MAX_ROWS": ' . $limit;
+        if ( print_columns( $reached_limit ) > $len ) {
+            $reached_limit = '=LIMIT= ' . $limit;
+            $reached_limit = cut_to_printwidth( $reached_limit, $len );
         }
         push @$list, unicode_sprintf( $reached_limit, $len, 0 );
     }
@@ -232,14 +227,17 @@ sub __inner_print_tbl {
             $self->__inner_print_tbl( $a_ref );
             return;
         }
-        my $prompt = $self->{keep_header} ? shift @$list : '';
+        my $header = $self->{keep_header} ? shift @$list : '';
         if ( ! @$list ) {
-            $list = [ $prompt ];
-            $prompt = '';
-            $old_row = 0;
+            $list = [ $header ];
+            $header = undef;
         }
+        my $prompt;
         if ( length $self->{prompt} ) {
-            $prompt = $self->{prompt} . "\n" . $prompt;
+            $prompt = $self->{prompt} . "\n" . $header;
+        }
+        else {
+            $prompt = $header;
         }
         # Choose
         my $row = choose(
@@ -247,151 +245,96 @@ sub __inner_print_tbl {
             { prompt => $prompt, index => 1, default => $old_row, ll => $len, layout => 3,
               clear_screen => 1, mouse => $self->{mouse} }
         );
-        return if ! defined $row;
-        unshift @$list, $prompt if $self->{keep_header};
+        if ( ! defined $row ) {
+            return;
+        }
+        if ( $self->{keep_header} && defined $header ) {
+            unshift @$list, $header;
+        }
         if ( ! $self->{table_expand} ) {
             return if $row == 0;
-            next;
         }
-        if ( $old_row == $row ) {
-            if ( $row == 0 ) {
-                if ( ! $self->{keep_header} ) {
-                    return;
+        else {
+            if ( $old_row == $row ) {
+                if ( $row == 0 ) {
+                    if ( ! $self->{keep_header} ) {
+                        return;
+                    }
+                    elsif ( $self->{table_expand} == 1 ) {
+                        return if $expanded;
+                        return if $auto_jumped_to_first_row == 1;
+                    }
+                    elsif ( $self->{table_expand} == 2 ) {
+                        return if $expanded;
+                    }
+                    $auto_jumped_to_first_row = 0;
                 }
-                elsif ( $self->{table_expand} == 1 ) {
-                    return if $expanded;
-                    return if $auto_jumped_to_first_row == 1;
+                else {
+                    $old_row = 0;
+                    $auto_jumped_to_first_row = 1;
+                    $expanded = 0;
+                    next;
                 }
-                elsif ( $self->{table_expand} == 2 ) {
-                    return if $expanded;
-                }
-                $auto_jumped_to_first_row = 0;
             }
-            else {
-                $old_row = 0;
-                $auto_jumped_to_first_row = 1;
-                $expanded = 0;
-                next;
-            }
+            $old_row = $row;
+            $row++ if $self->{keep_header};
+            $expanded = 1;
+            $self->__print_single_row( $a_ref, $row, $self->{longest_col_name} + 1 );
         }
-        $old_row = $row;
-        $row++ if $self->{keep_header};
-        $expanded = 1;
-        my $row_data = $self->__single_row( $a_ref, $row, $self->{longest_col_name} + 1 );
-        # Choose
-        choose(
-            $row_data,
-            { prompt => '', layout => 3, clear_screen => 1, mouse => $self->{mouse} }
-        );
     }
 }
 
 
-sub __single_row {
+sub __print_single_row {
     my ( $self, $a_ref, $row, $len_key ) = @_;
     my ( $term_width ) = term_size();
     $len_key = int( $term_width / 100 * 33 ) if $len_key > int( $term_width / 100 * 33 );
     my $separator = ' : ';
-    my $gcs_sep = Unicode::GCString->new( $separator );
-    my $len_sep = $gcs_sep->columns;
+    my $len_sep = print_columns( $separator );
     my $col_max = $term_width - ( $len_key + $len_sep + 1 );
-    my $line_fold = Text::LineFold->new(
-        Charset=> 'utf8',
-        OutputCharset => '_UNICODE_',
-        Urgent => 'FORCE' ,
-        ColMax => $col_max,
-    );
     my $row_data = [ ' Close with ENTER' ];
+
     for my $col ( 0 .. $#{$a_ref->[0]} ) {
         push @{$row_data}, ' ';
-        my $key = $a_ref->[0][$col];
+        my $key = cut_to_printwidth( $self->__sanitized_string( $a_ref->[0][$col] ), $len_key );
         my $sep = $separator;
         if ( ! defined $a_ref->[$row][$col] || $a_ref->[$row][$col] eq '' ) {
             push @{$row_data}, sprintf "%*.*s%*s%s", $len_key, $len_key, $key, $len_sep, $sep, '';
         }
         else {
-            my $text = $line_fold->fold( $a_ref->[$row][$col], 'PLAIN' );
-            for my $line ( split /\n+/, $text ) {
+            for my $line ( split /\n+/, line_fold( $a_ref->[$row][$col], $col_max, '', '' ) ) {
                 push @{$row_data}, sprintf "%*.*s%*s%s", $len_key, $len_key, $key, $len_sep, $sep, $line;
                 $key = '' if $key;
                 $sep = '' if $sep;
             }
         }
     }
-    return $row_data;
+    # Choose
+    choose(
+        $row_data,
+        { prompt => '', layout => 3, clear_screen => 1, mouse => $self->{mouse} }
+    );
 }
 
 
-sub __calc_col_width {
-    my ( $self, $a_ref ) = @_;
-    my $show_progress = $self->{show_progress} >= 2 ? 1 : 0; #
-    my $total = @$a_ref;                      #
-    my $next_update = 0;                      #
-    my $c = 0;                                #
-    my $progress;                             #
-    if ( $show_progress ) {                   #
-        local $| = 1;                         #
-        print CLEAR_SCREEN;                   #
-        $progress = Term::ProgressBar->new( { #
-            name => 'Computing',              #
-            count => $total,                  #
-            remove => 1 } );                  #
-        $progress->minor( 0 );                #
-    }                                         #
-
-    my $binray_regexp = qr/[\x00-\x08\x0B-\x0C\x0E-\x1F]/;
-    $self->{longest_col_name} = 0;
-    $self->{width_cols} = [ ( 1 ) x @{$a_ref->[0]} ];
-    my $normal_row = 0;
-    my @col_idx = ( 0 .. $#{$a_ref->[0]} );
-
-    for my $row ( @$a_ref ) {
-        for my $i ( @col_idx ) {
-            if ( ! defined $row->[$i] ) {
-                $row->[$i] = $self->{undef};
-            }
-            if ( ref $row->[$i] ) {
-                $row->[$i] = $self->__handle_reference( $row->[$i] );
-            }
-            my $width;
-            if ( $self->{binary_filter} && substr( $row->[$i], 0, 100 ) =~ $binray_regexp ) {
-                $row->[$i] = $self->{binary_string};
-                $width     = $self->{binary_length};
-            }
-            else {
-                $row->[$i] =~ s/^\p{Space}+//;
-                $row->[$i] =~ s/\p{Space}+\z//;
-                #$row->[$i] =~ s/(?<=\P{Space})\p{Space}+/ /g;
-                $row->[$i] =~ s/\p{Space}+/ /g;
-                $row->[$i] =~ s/\p{C}//g;
-                my $gcs = Unicode::GCString->new( $row->[$i] );
-                $width = $gcs->columns;
-            }
-            if ( $normal_row ) {
-                if ( $width > $self->{width_cols}[$i] ) {
-                    $self->{width_cols}[$i] = $width;
-                }
-                if ( $row->[$i] && ! looks_like_number $row->[$i] ) {
-                    ++$self->{not_a_number}[$i];
-                }
-            }
-            else {
-                # column name
-                $self->{width_head}[$i] = $width;
-                if ( $width > $self->{longest_col_name} ) {
-                    $self->{longest_col_name} = $width;
-                }
-                if ( $i == $#$row ) {
-                    $normal_row = 1;
-                }
-            }
-        }
-        if ( $show_progress ) {                                              #
-            $next_update = $progress->update( $c ) if $c >= $next_update;    #
-            ++$c;                                                            #
-        }                                                                    #
+sub __sanitized_string {
+    my ( $self, $str ) = @_;
+    if ( ! defined $str ) {
+        $str = $self->{undef};
     }
-    $progress->update( $total ) if $show_progress && $total >= $next_update; #
+    elsif ( ref $str ) {
+        $str = $self->__handle_reference( $str );
+    }
+    elsif ( $self->{binary_filter} && substr( $str, 0, 100 ) =~ $self->{binray_regexp} ) {
+        $str = $self->{binary_string};
+    }
+    else {
+        $str =~ s/^\p{Space}+//;
+        $str =~ s/\p{Space}+\z//;
+        $str =~ s/\p{Space}+/ /g;
+        $str =~ s/\p{C}//g;
+    }
+    return $str;
 }
 
 sub __handle_reference {
@@ -417,6 +360,58 @@ sub __handle_reference {
     else {
         return 'ref: ' . ref( $ref );
     }
+}
+
+
+sub __calc_col_width {
+    my ( $self, $a_ref ) = @_;
+    my $show_progress = $self->{show_progress} >= 2 ? 1 : 0; #
+    my $total = @$a_ref;                      #
+    my $next_update = 0;                      #
+    my $c = 0;                                #
+    my $progress;                             #
+    if ( $show_progress ) {                   #
+        local $| = 1;                         #
+        print CLEAR_SCREEN;                   #
+        $progress = Term::ProgressBar->new( { #
+            name => 'Computing',              #
+            count => $total,                  #
+            remove => 1 } );                  #
+        $progress->minor( 0 );                #
+    }                                         #
+    $self->{longest_col_name} = 0;
+    $self->{width_cols} = [ ( 1 ) x @{$a_ref->[0]} ];
+    my $normal_row = 0;
+    my @col_idx = ( 0 .. $#{$a_ref->[0]} );
+
+    for my $row ( @$a_ref ) {
+        for my $i ( @col_idx ) {
+            my $width = print_columns( $self->__sanitized_string( $row->[$i] ) );
+            if ( $normal_row ) {
+                if ( $width > $self->{width_cols}[$i] ) {
+                    $self->{width_cols}[$i] = $width;
+                }
+                if ( $row->[$i] && ! looks_like_number $row->[$i] ) {
+                    ++$self->{not_a_number}[$i];
+                }
+            }
+            else {
+                # col name
+                $self->{width_head}[$i] = $width;
+                if ( $width > $self->{longest_col_name} ) {
+                    $self->{longest_col_name} = $width;
+                }
+                if ( $i == $#$row ) {
+                    $normal_row = 1;
+                }
+            }
+        }
+        if ( $show_progress ) {                                              #
+            $next_update = $progress->update( $c ) if $c >= $next_update;    #
+            ++$c;                                                            #
+        }                                                                    #
+    }
+    $progress->update( $total ) if $show_progress && $total >= $next_update; #
 }
 
 
@@ -528,7 +523,11 @@ sub __trunk_col_to_avail_width {
     for my $row ( @$a_ref ) {
         my $str = '';
         for my $i ( 0 .. $#$width_cols ) {
-            $str .= unicode_sprintf( $row->[$i], $width_cols->[$i], $self->{not_a_number}[$i] ? 0 : 1 );
+            $str .= unicode_sprintf(
+               $self-> __sanitized_string( $row->[$i] ),
+                $width_cols->[$i],
+                $self->{not_a_number}[$i] ? 0 : 1
+            );
             $str .= $tab if $i != $#$width_cols;
         }
         push @$list, $str;
@@ -559,7 +558,7 @@ Term::TablePrint - Print a table to the terminal and browse it interactively.
 
 =head1 VERSION
 
-Version 0.026
+Version 0.026_01
 
 =cut
 

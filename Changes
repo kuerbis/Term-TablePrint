@@ -1,6 +1,14 @@
 Revision history for Term::TablePrint
 
 
+0.026_01   2016-02-14
+        - Bugfix: don't change the passed table-data.
+        - Bugfix prompt.
+        - Code refactoring.
+        - Requires "Term::Choose::LineFold".
+        - "Term::Choose": minimum verson "1.209_01".
+        - "Term::Choose::Util": minimum version "0.030_01".
+
 0.026   2016-02-07
         - Code cleanup.
         - Update year copyright.
