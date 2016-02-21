@@ -5,7 +5,7 @@ use strict;
 use 5.008003;
 no warnings 'utf8';
 
-our $VERSION = '0.026_01';
+our $VERSION = '0.050';
 use Exporter 'import';
 our @EXPORT_OK = qw( print_table );
 
@@ -227,17 +227,14 @@ sub __inner_print_tbl {
             $self->__inner_print_tbl( $a_ref );
             return;
         }
-        my $header = $self->{keep_header} ? shift @$list : '';
-        if ( ! @$list ) {
-            $list = [ $header ];
-            $header = undef;
+        my $header;
+        if ( $self->{keep_header} && @$list > 1 ) {
+            $header = shift @$list;
         }
-        my $prompt;
-        if ( length $self->{prompt} ) {
-            $prompt = $self->{prompt} . "\n" . $header;
-        }
-        else {
-            $prompt = $header;
+        my $prompt = $self->{prompt};
+        if ( defined $header ) {
+            $prompt .= "\n" if length $prompt;
+            $prompt .= $header;
         }
         # Choose
         my $row = choose(
@@ -248,7 +245,7 @@ sub __inner_print_tbl {
         if ( ! defined $row ) {
             return;
         }
-        if ( $self->{keep_header} && defined $header ) {
+        if ( defined $header ) {
             unshift @$list, $header;
         }
         if ( ! $self->{table_expand} ) {
@@ -296,7 +293,7 @@ sub __print_single_row {
 
     for my $col ( 0 .. $#{$a_ref->[0]} ) {
         push @{$row_data}, ' ';
-        my $key = cut_to_printwidth( $self->__sanitized_string( $a_ref->[0][$col] ), $len_key );
+        my $key = cut_to_printwidth( $self->__sanitize_string( $a_ref->[0][$col] ), $len_key );
         my $sep = $separator;
         if ( ! defined $a_ref->[$row][$col] || $a_ref->[$row][$col] eq '' ) {
             push @{$row_data}, sprintf "%*.*s%*s%s", $len_key, $len_key, $key, $len_sep, $sep, '';
@@ -317,7 +314,7 @@ sub __print_single_row {
 }
 
 
-sub __sanitized_string {
+sub __sanitize_string {
     my ( $self, $str ) = @_;
     if ( ! defined $str ) {
         $str = $self->{undef};
@@ -386,7 +383,7 @@ sub __calc_col_width {
 
     for my $row ( @$a_ref ) {
         for my $i ( @col_idx ) {
-            my $width = print_columns( $self->__sanitized_string( $row->[$i] ) );
+            my $width = print_columns( $self->__sanitize_string( $row->[$i] ) );
             if ( $normal_row ) {
                 if ( $width > $self->{width_cols}[$i] ) {
                     $self->{width_cols}[$i] = $width;
@@ -524,7 +521,7 @@ sub __trunk_col_to_avail_width {
         my $str = '';
         for my $i ( 0 .. $#$width_cols ) {
             $str .= unicode_sprintf(
-               $self-> __sanitized_string( $row->[$i] ),
+                $self-> __sanitize_string( $row->[$i] ),
                 $width_cols->[$i],
                 $self->{not_a_number}[$i] ? 0 : 1
             );
@@ -558,7 +555,7 @@ Term::TablePrint - Print a table to the terminal and browse it interactively.
 
 =head1 VERSION
 
-Version 0.026_01
+Version 0.050
 
 =cut
 

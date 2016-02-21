@@ -1,6 +1,11 @@
 Revision history for Term::TablePrint
 
 
+0.050   2016-02-21
+        - Bugfix prompt.
+        - "Term::Choose": minimum version "1.500".
+        - "Term::Choose::Util": minimum version "0.050".
+
 0.026_01   2016-02-14
         - Bugfix: don't change the passed table-data.
         - Bugfix prompt.

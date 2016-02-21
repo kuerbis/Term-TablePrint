@@ -34,9 +34,9 @@ WriteMakefile(
         'Exporter'               => 0,
         'List::Util'             => 0,
         'Scalar::Util'           => 0,
-        'Term::Choose'           => '1.209_01',
-        'Term::Choose::LineFold' => '1.209_01',
-        'Term::Choose::Util'     => '0.030_01',
+        'Term::Choose'           => '1.500',
+        'Term::Choose::LineFold' => '1.500',
+        'Term::Choose::Util'     => '0.050',
         'Term::ProgressBar'      => 0,
     },
     dist  => {
