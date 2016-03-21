@@ -5,7 +5,7 @@ use strict;
 use 5.008003;
 no warnings 'utf8';
 
-our $VERSION = '0.050';
+our $VERSION = '0.051';
 use Exporter 'import';
 our @EXPORT_OK = qw( print_table );
 
@@ -244,6 +244,9 @@ sub __inner_print_tbl {
         );
         if ( ! defined $row ) {
             return;
+        }
+        elsif ( $row == -1 ) {
+            next;
         }
         if ( defined $header ) {
             unshift @$list, $header;
@@ -555,7 +558,7 @@ Term::TablePrint - Print a table to the terminal and browse it interactively.
 
 =head1 VERSION
 
-Version 0.050
+Version 0.051
 
 =cut
 
@@ -697,8 +700,7 @@ enabled.
 
 =back
 
-If the width of the window is changed and the option I<table_expand> is enabled, the user can rewrite the screen by
-choosing a row.
+If the size of the window is changed, the screen is rewritten as soon as the user presses a key.
 
 If the option I<choose_columns> is enabled, the C<SpaceBar> key (or the right mouse key) can be used to select columns -
 see option L</choose_columns>.

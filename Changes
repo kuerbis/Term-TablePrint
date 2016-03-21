@@ -1,6 +1,10 @@
 Revision history for Term::TablePrint
 
 
+0.051   2016-03-21
+        - "Term::Choose": minimum version "1.504".
+        - Rewrite the screen if the window size has changed.
+
 0.050   2016-02-21
         - Bugfix prompt.
         - "Term::Choose": minimum version "1.500".
