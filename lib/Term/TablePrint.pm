@@ -5,7 +5,7 @@ use strict;
 use 5.008003;
 no warnings 'utf8';
 
-our $VERSION = '0.051';
+our $VERSION = '0.052';
 use Exporter 'import';
 our @EXPORT_OK = qw( print_table );
 
@@ -207,6 +207,9 @@ sub __inner_print_tbl {
     my ( $self, $a_ref ) = @_;
     my ( $term_width ) = term_size();
     my $width_cols = $self->__calc_avail_width( $a_ref, $term_width );
+    if ( !defined $width_cols ) {
+        return;
+    }
     my ( $list, $len ) = $self->__trunk_col_to_avail_width( $a_ref, $width_cols );
     if ( $self->{max_rows} && @$list - 1 >= $self->{max_rows} ) {
         my $limit = insert_sep( $self->{max_rows}, $self->{thsd_sep} );
@@ -440,16 +443,15 @@ sub __calc_avail_width {
     elsif ( $sum > $avail_width ) {
         my $minimum_with = $self->{min_col_width} || 1;
         if ( @$width_head > $avail_width ) {
-            print 'Terminal window is not wide enough to print this table.' . "\n";
+            my $prompt_1 = 'To many columns - terminal window is not wide enough.';
             choose(
                 [ 'Press ENTER to show the column names.' ],
-                { prompt => '', clear_screen => 0, mouse => $self->{mouse} }
+                { prompt => $prompt_1, clear_screen => 1, mouse => $self->{mouse} }
             );
-            my $prompt = 'Reduce the number of columns".' . "\n";
-            $prompt .= 'Close with ENTER.';
+            my $prompt_2 .= 'Column names (close with ENTER).';
             choose(
                 $a_ref->[0],
-                { prompt => $prompt, clear_screen => 0, mouse => $self->{mouse} }
+                { prompt => $prompt_2, clear_screen => 1, mouse => $self->{mouse} }
             );
             return;
         }
@@ -558,7 +560,7 @@ Term::TablePrint - Print a table to the terminal and browse it interactively.
 
 =head1 VERSION
 
-Version 0.051
+Version 0.052
 
 =cut
 
@@ -875,7 +877,7 @@ Matthäus Kiem <cuer2s@gmail.com>
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright 2013-2016 Matthäus Kiem.
+Copyright 2013-2017 Matthäus Kiem.
 
 This library is free software; you can redistribute it and/or modify it under the same terms as Perl 5.10.0. For
 details, see the full text of the licenses in the file LICENSE.

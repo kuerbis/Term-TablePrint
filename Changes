@@ -1,6 +1,11 @@
 Revision history for Term::TablePrint
 
 
+0.052   2017-03-01
+        - Bugfix: return if too many columns.
+        - Too many columns: update notification text.
+        - Update year copyright.
+
 0.051   2016-03-21
         - "Term::Choose": minimum version "1.504".
         - Rewrite the screen if the window size has changed.
