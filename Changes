@@ -1,6 +1,10 @@
 Revision history for Term::TablePrint
 
 
+0.053   2017-04-21
+        - New option "grid".
+        - Update documentation.
+
 0.052   2017-03-01
         - Bugfix: return if too many columns.
         - Too many columns: update notification text.

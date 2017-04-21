@@ -5,7 +5,7 @@ use strict;
 use 5.008003;
 no warnings 'utf8';
 
-our $VERSION = '0.052';
+our $VERSION = '0.053';
 use Exporter 'import';
 our @EXPORT_OK = qw( print_table );
 
@@ -44,6 +44,7 @@ sub __validate_options {
         tab_width       => '[ 0-9 ]+',
         add_header      => '[ 0 1 ]',
         binary_filter   => '[ 0 1 ]',
+        grid            => '[ 0 1 ]',       # pod
         keep_header     => '[ 0 1 ]',
         choose_columns  => '[ 0 1 2 ]',
         table_expand    => '[ 0 1 2 ]',
@@ -80,6 +81,7 @@ sub __set_defaults {
     $self->{binary_filter}  = 0      if ! defined $self->{binary_filter};
     $self->{binary_string}  = 'BNRY' if ! defined $self->{binary_string};
     $self->{choose_columns} = 0      if ! defined $self->{choose_columns};
+    $self->{grid}           = 0      if ! defined $self->{grid};
     $self->{keep_header}    = 1      if ! defined $self->{keep_header};
     $self->{max_rows}       = 50000  if ! defined $self->{max_rows};
     $self->{min_col_width}  = 30     if ! defined $self->{min_col_width};
@@ -91,6 +93,8 @@ sub __set_defaults {
     $self->{undef}          = ''     if ! defined $self->{undef};
     $self->{thsd_sep} = ',';
     $self->{no_col}   = 'col';
+    $self->{tab_w}    = $self->{tab_width};
+    $self->{tab_w}++    if $self->{grid} && ! ( $self->{tab_width} % 2 );
 }
 
 
@@ -207,7 +211,7 @@ sub __inner_print_tbl {
     my ( $self, $a_ref ) = @_;
     my ( $term_width ) = term_size();
     my $width_cols = $self->__calc_avail_width( $a_ref, $term_width );
-    if ( !defined $width_cols ) {
+    if ( ! defined $width_cols ) {
         return;
     }
     my ( $list, $len ) = $self->__trunk_col_to_avail_width( $a_ref, $width_cols );
@@ -230,14 +234,15 @@ sub __inner_print_tbl {
             $self->__inner_print_tbl( $a_ref );
             return;
         }
-        my $header;
-        if ( $self->{keep_header} && @$list > 1 ) {
-            $header = shift @$list;
+        my @header = ();
+        my $header_size = $self->{grid} ? 2 : 1;
+        if ( $self->{keep_header} && @$list > $header_size ) {
+            @header = splice( @$list, 0, $header_size );
         }
         my $prompt = $self->{prompt};
-        if ( defined $header ) {
+        if ( @header ) {
             $prompt .= "\n" if length $prompt;
-            $prompt .= $header;
+            $prompt .= join( "\n", @header );
         }
         # Choose
         my $row = choose(
@@ -251,8 +256,8 @@ sub __inner_print_tbl {
         elsif ( $row == -1 ) {
             next;
         }
-        if ( defined $header ) {
-            unshift @$list, $header;
+        if ( @header ) {
+            unshift @$list, @header;
         }
         if ( ! $self->{table_expand} ) {
             return if $row == 0;
@@ -280,7 +285,15 @@ sub __inner_print_tbl {
                 }
             }
             $old_row = $row;
-            $row++ if $self->{keep_header};
+            if ( $self->{keep_header} ) {
+                $row++;
+            }
+            else {
+                if ( $self->{grid} ) {
+                    next   if $row == 1;
+                    $row-- if $row > 1;
+                }
+            }
             $expanded = 1;
             $self->__print_single_row( $a_ref, $row, $self->{longest_col_name} + 1 );
         }
@@ -422,7 +435,7 @@ sub __calc_avail_width {
     my ( $self, $a_ref, $term_width ) = @_;
     my $width_head = [ @{$self->{width_head}} ];
     my $width_cols = [ @{$self->{width_cols}} ];
-    my $avail_width = $term_width - $self->{tab_width} * $#$width_cols;
+    my $avail_width = $term_width - $self->{tab_w} * $#$width_cols;
     my $sum = sum( @$width_cols );
     if ( $sum < $avail_width ) {
         # auto cut
@@ -448,7 +461,7 @@ sub __calc_avail_width {
                 [ 'Press ENTER to show the column names.' ],
                 { prompt => $prompt_1, clear_screen => 1, mouse => $self->{mouse} }
             );
-            my $prompt_2 .= 'Column names (close with ENTER).';
+            my $prompt_2 = 'Column names (close with ENTER).';
             choose(
                 $a_ref->[0],
                 { prompt => $prompt_2, clear_screen => 1, mouse => $self->{mouse} }
@@ -520,10 +533,26 @@ sub __trunk_col_to_avail_width {
             remove => 1 } );                  #
         $progress->minor( 0 );                #
     }                                         #
-    my $list;
-    my $tab = ' ' x $self->{tab_width};
+    my $list = [];
+    my $tab;
+    if ( $self->{grid} ) {
+        $tab = ( ' ' x int( $self->{tab_w} / 2 ) ) . '|' . ( ' ' x int( $self->{tab_w} / 2 ) );
+    }
+    else {
+        $tab = ' ' x $self->{tab_w};
+    }
     for my $row ( @$a_ref ) {
         my $str = '';
+        if ( $self->{grid} && @$list == 1 ) {
+            my $header_sep = '';
+            for my $i ( 0 .. $#$width_cols ) {
+                $header_sep .= '-' x $width_cols->[$i];
+                ( my $t = $tab ) =~ s/\s/-/g;
+                $header_sep .= $t if $i != $#$width_cols;
+            }
+            push @$list, $header_sep;
+        }
+
         for my $i ( 0 .. $#$width_cols ) {
             $str .= unicode_sprintf(
                 $self-> __sanitize_string( $row->[$i] ),
@@ -539,7 +568,7 @@ sub __trunk_col_to_avail_width {
         }                                                                    #
     }
     $progress->update( $total ) if $self->{show_progress} && $total >= $next_update; #
-    my $len = sum( @$width_cols, $self->{tab_width} * $#{$width_cols} );
+    my $len = sum( @$width_cols, $self->{tab_w} * $#{$width_cols} );
     return $list, $len;
 }
 
@@ -560,7 +589,7 @@ Term::TablePrint - Print a table to the terminal and browse it interactively.
 
 =head1 VERSION
 
-Version 0.052
+Version 0.053
 
 =cut
 
@@ -741,13 +770,20 @@ the C<SpaceBar> and the C<Return> key) until the user confirms with the I<-ok-> 
 
 Default: 0
 
+=head3 grid
+
+If enabled, columns are separated from each other with lines and the header row is separated with a line from the rest
+of the table.
+
+Default: 0
+
 =head3 keep_header
 
 If I<keep_header> is set to 1, the table header is shown on top of each page.
 
 If I<keep_header> is set to 0, the table header is shown on top of the first page.
 
-Default: 1;
+Default: 1
 
 =head3 max_rows
 
