@@ -1,6 +1,9 @@
 Revision history for Term::TablePrint
 
 
+0.059   2018-01-11
+        - Bugfix: uninitialized value
+
 0.058   2018-01-11
         - Bugfix: // not yet available in Perl 5.8.
 

@@ -5,7 +5,7 @@ use strict;
 use 5.008003;
 no warnings 'utf8';
 
-our $VERSION = '0.058';
+our $VERSION = '0.059';
 use Exporter 'import';
 our @EXPORT_OK = qw( print_table );
 
@@ -107,18 +107,18 @@ sub print_table {
         $self->{backup_opt} = { map{ $_ => $self->{$_} } keys %$opt };
         $self->__validate_options( $opt );
     }
-    
-    # ### remove
-    if ( $self->{choose_columns} == 2 ) {
-        choose( [ 'Close with ENTER' ], { prompt => "print_table option \"choose-columns\": 2 is no longer a valid value!" } );
-    }
-    # ###
-    
     if ( ! @$table_ref ) {
         choose( [ 'Close with ENTER' ], { prompt => "print_table: empty table without header row!" } );
         return;
     }
     $self->__set_defaults();
+
+    # ### remove
+    if ( $self->{choose_columns} == 2 ) {
+        choose( [ 'Close with ENTER' ], { prompt => "print_table option \"choose-columns\": 2 is no longer a valid value!" } );
+    }
+    # ###
+
     if ( $self->{add_header} ) {
         unshift @$table_ref, [ map { $_ . '_' . $self->{no_col} } 1 .. @{$table_ref->[0]} ];
     }
@@ -596,7 +596,7 @@ Term::TablePrint - Print a table to the terminal and browse it interactively.
 
 =head1 VERSION
 
-Version 0.058
+Version 0.059
 
 =cut
 
