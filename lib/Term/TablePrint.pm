@@ -130,12 +130,11 @@ sub print_table {
         if ( $table_rows > $self->{max_rows} ) { # because for App::DBBrowser adding "(Total %d)" would be wrong
             $self->{info_row} .= sprintf( '  (total %d)', insert_sep( $table_rows, $self->{thsd_sep} ) );
         }
-        $self->{idx_last_row} = $self->{max_rows} - 1;
+        $self->{idx_last_row} = $self->{max_rows}; # -1 for index and +1 for header row
     }
     else {
         $self->{idx_last_row} = $#$table_ref;
     }
-    $self->{idx_last_row} = $self->{max_rows} && $self->{max_rows} < @$table_ref ? $self->{max_rows} : $#$table_ref;
     my $col_idxs = [];
     if ( $self->{choose_columns}  ) {
         $col_idxs = $self->__choose_columns( $table_ref->[0] ) if $self->{choose_columns};
