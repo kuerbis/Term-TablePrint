@@ -1,6 +1,9 @@
 Revision history for Term::TablePrint
 
 
+0.062   2018-01-24
+        - Option "choose_columns": allow the user to reset the made choice
+
 0.061   2018-01-22
         - Option "add_header" is deprecated and will be removed.
         - Bugfix: don't let "max_rows" alter the user input.

@@ -5,7 +5,7 @@ use strict;
 use 5.008003;
 no warnings 'utf8';
 
-our $VERSION = '0.061';
+our $VERSION = '0.062';
 use Exporter 'import';
 our @EXPORT_OK = qw( print_table );
 
@@ -476,20 +476,21 @@ sub __choose_columns {
     my ( $self, $avail_cols ) = @_;
     my $col_idxs = [];
     my $ok = '-ok-';
-    my @pre = ( $ok );
+    my @pre = ( undef, $ok );
     my $init_prompt = 'Columns: ';
     my $s_tab = print_columns( $init_prompt );
+    my @cols = map { defined $_ ? $_ : '<UNDEF>' } @$avail_cols;
 
     while ( 1 ) {
-        my @chosen_cols = @$col_idxs ?  @{$avail_cols}[@$col_idxs] : '*';
-        my $prompt = $init_prompt . join( ', ', map { defined $_ ? $_ : $self->{undef} } @chosen_cols );
-        my $choices = [ @pre, @$avail_cols ];
+        my @chosen_cols = @$col_idxs ?  @cols[@$col_idxs] : '*';
+        my $prompt = $init_prompt . join( ', ', @chosen_cols );
+        my $choices = [ @pre, @cols ];
         my @idx = choose(
             $choices,
-            { prompt => $prompt, lf => [ 0, $s_tab ], clear_screen => 1,
+            { prompt => $prompt, lf => [ 0, $s_tab ], clear_screen => 1, undef => '<<',
               no_spacebar => [ 0 .. $#pre ], index => 1, mouse => $self->{mouse} }
         );
-        if ( ! @idx ) {
+        if ( ! @idx || $idx[0] == 0 ) {
             if ( @$col_idxs ) {
                 $col_idxs = [];
                 next;
@@ -602,7 +603,7 @@ Term::TablePrint - Print a table to the terminal and browse it interactively.
 
 =head1 VERSION
 
-Version 0.061
+Version 0.062
 
 =cut
 
@@ -760,6 +761,8 @@ String displayed above the table.
 =head3 add_header DEPRECATED
 
 This option is deprecated and will be removed.
+
+Enabling I<add_header> alters the passed list.
 
 If I<add_header> is set to 1, C<print_table> adds a header row - the columns are numbered starting with 1.
 
