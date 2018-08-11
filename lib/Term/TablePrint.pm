@@ -5,7 +5,7 @@ use strict;
 use 5.008003;
 no warnings 'utf8';
 
-our $VERSION = '0.070';
+our $VERSION = '0.071';
 use Exporter 'import';
 our @EXPORT_OK = qw( print_table );
 
@@ -13,7 +13,7 @@ use Carp         qw( carp croak );
 use List::Util   qw( sum );
 use Scalar::Util qw( looks_like_number );
 
-use Term::ProgressBar qw();
+#use Term::ProgressBar qw();
 
 use Term::Choose            qw( choose );
 use Term::Choose::Constants qw( :screen );
@@ -142,9 +142,12 @@ sub print_table {
         $a_ref = $table_ref;
     }
     $self->{binray_regexp} = qr/[\x00-\x08\x0B-\x0C\x0E-\x1F]/;
+    $self->{show_progress} = 0;
     if ( $self->{progress_bar} ) {
 #        print 'Computing: ...' . "\n";
-        $self->{show_progress} = int @$a_ref * @{$a_ref->[0]} / $self->{progress_bar};
+        if ( eval{ require Term::ProgressBar } ) {
+            $self->{show_progress} = int @$a_ref * @{$a_ref->[0]} / $self->{progress_bar};
+        }
     }
     $self->__calc_col_width( $a_ref );
     $self->__win_size_dependet_code( $a_ref );
@@ -608,7 +611,7 @@ Term::TablePrint - Print a table to the terminal and browse it interactively.
 
 =head1 VERSION
 
-Version 0.070
+Version 0.071
 
 =cut
 
@@ -835,6 +838,8 @@ Default: 0
 Set the progress bar threshold. If the number of fields (rows x columns) is higher than the threshold, a progress bar is
 shown while preparing the data for the output.
 
+If the module L<Term::ProgressBar> is not available no progress bar is shown.
+
 Default: 40_000
 
 =head3 tab_width
@@ -888,6 +893,10 @@ if an invalid option value is passed.
 =head2 Perl version
 
 Requires Perl version 5.8.3 or greater.
+
+=head2 Optional modules
+
+L<Term::ProgressBar>
 
 =head2 Decoded strings
 

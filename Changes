@@ -1,6 +1,9 @@
 Revision history for Term::TablePrint
 
 
+0.071   2018-08-11
+        - Make "Term::ProgressBar" optional so that "Term::TablePrint" can be used as a pure Perl module.
+
 0.070   2018-08-07
         - The Insert key goes back 25 pages, the Delete key goes forward 25 pages.
         - "Term::Choose": minimum version "1.621".
