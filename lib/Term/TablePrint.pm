@@ -5,7 +5,7 @@ use strict;
 use 5.008003;
 no warnings 'utf8';
 
-our $VERSION = '0.071';
+our $VERSION = '0.072';
 use Exporter 'import';
 our @EXPORT_OK = qw( print_table );
 
@@ -13,12 +13,11 @@ use Carp         qw( carp croak );
 use List::Util   qw( sum );
 use Scalar::Util qw( looks_like_number );
 
-#use Term::ProgressBar qw();
-
-use Term::Choose            qw( choose );
-use Term::Choose::Constants qw( :screen );
-use Term::Choose::LineFold  qw( line_fold cut_to_printwidth print_columns );
-use Term::Choose::Util      qw( term_size insert_sep unicode_sprintf );
+use Term::Choose                  qw( choose );
+use Term::Choose::Constants       qw( :screen );
+use Term::Choose::LineFold        qw( line_fold cut_to_printwidth print_columns );
+use Term::Choose::Util            qw( term_size insert_sep unicode_sprintf );
+use Term::TablePrint::ProgressBar qw();
 
 
 
@@ -39,6 +38,7 @@ sub new {
 sub DESTROY {
     #my ( $self ) = @_;
     print SHOW_CURSOR;
+    local $| = 1;
 }
 
 
@@ -145,9 +145,7 @@ sub print_table {
     $self->{show_progress} = 0;
     if ( $self->{progress_bar} ) {
 #        print 'Computing: ...' . "\n";
-        if ( eval{ require Term::ProgressBar } ) {
-            $self->{show_progress} = int @$a_ref * @{$a_ref->[0]} / $self->{progress_bar};
-        }
+         $self->{show_progress} = int @$a_ref * @{$a_ref->[0]} / $self->{progress_bar};
     }
     $self->__calc_col_width( $a_ref );
     $self->__win_size_dependet_code( $a_ref );
@@ -176,7 +174,7 @@ sub __win_size_dependet_code {
     if ( ! defined $w_cols ) {
         return;
     }
-    my ( $list, $table_w ) = $self->_col_to_avail_col_width( $a_ref, $w_cols );
+    my ( $list, $table_w ) = $self->__col_to_avail_col_width( $a_ref, $w_cols, $term_w );
     my @header;
     if ( length $self->{prompt} ) {
         @header = ( $self->{prompt} );
@@ -315,19 +313,20 @@ sub __print_single_row {
 sub __calc_col_width {
     my ( $self, $a_ref ) = @_;
     my $show_progress = $self->{show_progress} >= 2 ? 1 : 0; #
-    my $total = $self->{idx_last_row} + 1;    #
-    my $next_update = 0;                      #
-    my $c = 0;                                #
-    my $progress;                             #
-    if ( $show_progress ) {                   #
-        local $| = 1;                         #
-        print CLEAR_SCREEN;                   #
-        $progress = Term::ProgressBar->new( { #
-            name => 'Computing',              #
-            count => $total,                  #
-            remove => 1 } );                  #
-        $progress->minor( 0 );                #
-    }                                         #
+    my $total = $self->{idx_last_row} + 1;                   #
+    my $next_update = 0;                                     #
+    my $c = 0;                                               #
+    my $progress;                                            #
+    if ( $show_progress ) {                                  #
+        #local $| = 1;                                       #
+        print CLEAR_SCREEN;                                 #
+        $progress = Term::TablePrint::ProgressBar->new( {    #
+            term_width => ( term_size() )[0],                #
+            name       => 'Computing',                       #
+            count      => $total,                            #
+          #  remove     => 1,                                #
+        } );                                                 #
+    }                                                        #
     $self->{longest_col_name} = 0;
     $self->{w_cols} = [ ( 1 ) x @{$a_ref->[0]} ];
     my $normal_row = 0;
@@ -436,21 +435,22 @@ sub __calc_avail_col_width {
 }
 
 
-sub _col_to_avail_col_width {
-    my ( $self, $a_ref, $w_cols ) = @_;
-    my $total = $self->{idx_last_row} + 1;    #
-    my $next_update = 0;                      #
-    my $c = 0;                                #
-    my $progress;                             #
-    if ( $self->{show_progress} ) {           #
-        local $| = 1;                         #
-        print CLEAR_SCREEN;                   #
-        $progress = Term::ProgressBar->new( { #
-            name => 'Computing',              #
-            count => $total,                  #
-            remove => 1 } );                  #
-        $progress->minor( 0 );                #
-    }
+sub __col_to_avail_col_width {
+    my ( $self, $a_ref, $w_cols, $term_w ) = @_;
+    my $total = $self->{idx_last_row} + 1;                #
+    my $next_update = 0;                                  #
+    my $c = 0;                                            #
+    my $progress;                                         #
+    if ( $self->{show_progress} ) {                       #
+        #local $| = 1;                                    #
+        #print CLEAR_SCREEN;                              #
+        $progress = Term::TablePrint::ProgressBar->new( { #
+            term_width => $term_w,                        #
+            name       => 'Computing',                    #
+            count      => $total,                         #
+            #remove     => 1                              #
+        } );                                              #
+    }                                                     #
     my $tab;
     if ( $self->{grid} ) {
         $tab = ( ' ' x int( $self->{tab_w} / 2 ) ) . '|' . ( ' ' x int( $self->{tab_w} / 2 ) );
@@ -611,7 +611,7 @@ Term::TablePrint - Print a table to the terminal and browse it interactively.
 
 =head1 VERSION
 
-Version 0.071
+Version 0.072
 
 =cut
 
@@ -838,8 +838,6 @@ Default: 0
 Set the progress bar threshold. If the number of fields (rows x columns) is higher than the threshold, a progress bar is
 shown while preparing the data for the output.
 
-If the module L<Term::ProgressBar> is not available no progress bar is shown.
-
 Default: 40_000
 
 =head3 tab_width
@@ -893,10 +891,6 @@ if an invalid option value is passed.
 =head2 Perl version
 
 Requires Perl version 5.8.3 or greater.
-
-=head2 Optional modules
-
-L<Term::ProgressBar>
 
 =head2 Decoded strings
 
