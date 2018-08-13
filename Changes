@@ -1,6 +1,9 @@
 Revision history for Term::TablePrint
 
 
+0.073   2018-08-13
+        - Little code changes.
+
 0.072   2018-08-13
         - "Term::TablePrint" has now its own pure Perl progress bar module.
 

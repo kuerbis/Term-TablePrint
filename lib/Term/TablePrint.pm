@@ -5,7 +5,7 @@ use strict;
 use 5.008003;
 no warnings 'utf8';
 
-our $VERSION = '0.072';
+our $VERSION = '0.073';
 use Exporter 'import';
 our @EXPORT_OK = qw( print_table );
 
@@ -38,7 +38,6 @@ sub new {
 sub DESTROY {
     #my ( $self ) = @_;
     print SHOW_CURSOR;
-    local $| = 1;
 }
 
 
@@ -144,8 +143,10 @@ sub print_table {
     $self->{binray_regexp} = qr/[\x00-\x08\x0B-\x0C\x0E-\x1F]/;
     $self->{show_progress} = 0;
     if ( $self->{progress_bar} ) {
-#        print 'Computing: ...' . "\n";
-         $self->{show_progress} = int @$a_ref * @{$a_ref->[0]} / $self->{progress_bar};
+        local $| = 1;
+        print CLEAR_SCREEN;
+        print 'Computing:';
+        $self->{show_progress} = int @$a_ref * @{$a_ref->[0]} / $self->{progress_bar};
     }
     $self->__calc_col_width( $a_ref );
     $self->__win_size_dependet_code( $a_ref );
@@ -318,13 +319,10 @@ sub __calc_col_width {
     my $c = 0;                                               #
     my $progress;                                            #
     if ( $show_progress ) {                                  #
-        #local $| = 1;                                       #
-        print CLEAR_SCREEN;                                 #
         $progress = Term::TablePrint::ProgressBar->new( {    #
             term_width => ( term_size() )[0],                #
             name       => 'Computing',                       #
             count      => $total,                            #
-          #  remove     => 1,                                #
         } );                                                 #
     }                                                        #
     $self->{longest_col_name} = 0;
@@ -442,13 +440,10 @@ sub __col_to_avail_col_width {
     my $c = 0;                                            #
     my $progress;                                         #
     if ( $self->{show_progress} ) {                       #
-        #local $| = 1;                                    #
-        #print CLEAR_SCREEN;                              #
         $progress = Term::TablePrint::ProgressBar->new( { #
             term_width => $term_w,                        #
             name       => 'Computing',                    #
             count      => $total,                         #
-            #remove     => 1                              #
         } );                                              #
     }                                                     #
     my $tab;
@@ -611,7 +606,7 @@ Term::TablePrint - Print a table to the terminal and browse it interactively.
 
 =head1 VERSION
 
-Version 0.072
+Version 0.073
 
 =cut
 
