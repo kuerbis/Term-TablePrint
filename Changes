@@ -1,6 +1,10 @@
 Revision history for Term::TablePrint
 
 
+0.074   2018-08-14
+        - Use OS specific clear_screen and hide_cursor.
+        - "Term::Choose": minimum version "1.623".
+
 0.073   2018-08-13
         - Little code changes.
 

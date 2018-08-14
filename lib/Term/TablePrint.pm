@@ -5,7 +5,7 @@ use strict;
 use 5.008003;
 no warnings 'utf8';
 
-our $VERSION = '0.073';
+our $VERSION = '0.074';
 use Exporter 'import';
 our @EXPORT_OK = qw( print_table );
 
@@ -20,6 +20,18 @@ use Term::Choose::Util            qw( term_size insert_sep unicode_sprintf );
 use Term::TablePrint::ProgressBar qw();
 
 
+my $Plugin;
+BEGIN {
+    if ( $^O eq 'MSWin32' ) {
+        require Term::Choose::Win32;
+        $Plugin = 'Term::Choose::Win32';
+    }
+    else {
+        require Term::Choose::Linux;
+        $Plugin = 'Term::Choose::Linux';
+    }
+}
+
 
 sub new {
     my $class = shift;
@@ -31,13 +43,14 @@ sub new {
         $self->__validate_options( $opt );
     }
     $self->{backup_opt} = { defined $opt ? %$opt : () };
+    $self->{plugin} = $Plugin->new();
     return $self;
 }
 
 
 sub DESTROY {
-    #my ( $self ) = @_;
-    print SHOW_CURSOR;
+    my ( $self ) = @_;
+    $self->{plugin}->__show_cursor();
 }
 
 
@@ -101,7 +114,7 @@ sub __set_defaults {
 
 sub print_table {
     if ( ref $_[0] ne 'Term::TablePrint' ) {
-        return print_table( bless( {}, 'Term::TablePrint' ), @_ );
+        return print_table( bless( { plugin => $Plugin->new() }, 'Term::TablePrint' ), @_ );
     }
     my $self = shift;
     my ( $table_ref, $opt ) = @_;
@@ -127,7 +140,7 @@ sub print_table {
     else {
         $self->{idx_last_row} = $#$table_ref;
     }
-    print HIDE_CURSOR;
+    $self->{plugin}->__hide_cursor();
     my $col_idxs = [];
     if ( $self->{choose_columns}  ) {
         $col_idxs = $self->__choose_columns( $table_ref->[0] );
@@ -144,7 +157,7 @@ sub print_table {
     $self->{show_progress} = 0;
     if ( $self->{progress_bar} ) {
         local $| = 1;
-        print CLEAR_SCREEN;
+        $self->{plugin}->__clear_screen();
         print 'Computing:';
         $self->{show_progress} = int @$a_ref * @{$a_ref->[0]} / $self->{progress_bar};
     }
@@ -153,7 +166,7 @@ sub print_table {
     if ( exists $self->{backup_opt} ) {
         my $backup_opt = $self->{backup_opt};
         for my $key ( keys %$self ) {
-            if ( $key eq 'backup_opt' ) {
+            if ( $key eq 'plugin' || $key eq 'backup_opt' ) {
                 next;
             }
             elsif ( exists $backup_opt->{$key} ) {
@@ -164,7 +177,7 @@ sub print_table {
             }
         }
     }
-    print SHOW_CURSOR;
+    $self->{plugin}->__show_cursor();
 }
 
 
@@ -606,7 +619,7 @@ Term::TablePrint - Print a table to the terminal and browse it interactively.
 
 =head1 VERSION
 
-Version 0.073
+Version 0.074
 
 =cut
 

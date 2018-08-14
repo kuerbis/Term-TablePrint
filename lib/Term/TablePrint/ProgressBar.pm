@@ -30,8 +30,8 @@ sub init {
     my ( $self, $config ) = @_;
     my $target = delete $config->{count};
     my $term_w = $config->{term_width};
-    die if ! defined $target;
-    die if ! defined $term_w;
+    die "No 'count'!"     if ! defined $target;
+    die "No 'term_width'" if ! defined $term_w;
     for ( keys %{DEFAULTS()} ) {
         $self->{$_} = exists $config->{$_} ? $config->{$_} : DEFAULTS->{$_};
     }
