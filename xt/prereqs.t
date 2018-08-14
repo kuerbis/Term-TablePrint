@@ -7,6 +7,4 @@ use Test::Prereq;
 prereq_ok( undef, [
     'Term::Choose::Constants',
     'Term::Choose::LineFold',
-    'Term::Choose::Linux',
-    'Term::Choose::Win32',
  ] );
