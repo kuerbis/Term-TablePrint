@@ -5,7 +5,7 @@ use strict;
 use 5.008003;
 no warnings 'utf8';
 
-our $VERSION = '0.075_01';
+our $VERSION = '0.076';
 use Exporter 'import';
 our @EXPORT_OK = qw( print_table );
 
@@ -619,7 +619,7 @@ Term::TablePrint - Print a table to the terminal and browse it interactively.
 
 =head1 VERSION
 
-Version 0.075_01
+Version 0.076
 
 =cut
 
