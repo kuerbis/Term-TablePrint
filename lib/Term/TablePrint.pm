@@ -897,7 +897,7 @@ To disable the automatic limit set I<max_rows> to 0.
 If the number of table rows is equal to or higher than I<max_rows>, the last row of the output tells that the limit has
 been reached.
 
-Default: 100_000
+Default: 200_000
 
 =head3 min_col_width
 
@@ -917,7 +917,7 @@ Default: 0
 Set the progress bar threshold. If the number of fields (rows x columns) is higher than the threshold, a progress bar is
 shown while preparing the data for the output.
 
-Default: 50_000
+Default: 40_000
 
 =head3 tab_width
 
