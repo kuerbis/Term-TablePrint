@@ -4,7 +4,7 @@ use warnings;
 use strict;
 use 5.008003;
 
-our $VERSION = '0.100';
+our $VERSION = '0.101';
 use Exporter 'import';
 our @EXPORT_OK = qw( print_table );
 
@@ -97,7 +97,7 @@ sub __set_defaults {
     $self->{binary_filter}    = 0      if ! defined $self->{binary_filter};
     $self->{binary_string}    = 'BNRY' if ! defined $self->{binary_string};
     $self->{choose_columns}   = 0      if ! defined $self->{choose_columns};
-    $self->{codepage_mapping} = 1      if ! defined $self->{codepage_mapping};
+    $self->{codepage_mapping} = 0      if ! defined $self->{codepage_mapping};
     $self->{color}            = 0      if ! defined $self->{color};
     $self->{grid}             = 0      if ! defined $self->{grid};
     $self->{keep_header}      = 1      if ! defined $self->{keep_header};
@@ -682,7 +682,7 @@ Term::TablePrint - Print a table to the terminal and browse it interactively.
 
 =head1 VERSION
 
-Version 0.100
+Version 0.101
 
 =cut
 
@@ -849,20 +849,22 @@ Default: 0
 
 =head3 codepage_mapping
 
-This option has only meaning if the operating system is MSWin32 and the option I<color> is enabled. By setting this
-option to C<0> one can disable the codepage mapping enabled by L<Win32::Console::ANSI>. See option L</color>.
+This option has only meaning if the operating system is MSWin32 and the option I<color> is enabled.
 
-Default: 1
+By setting this option to C<1> one can enable the codepage mapping offered by L<Win32::Console::ANSI>.
+
+0 - disable automatic codepage mapping
+
+1 - keep automatic codepage mapping
+
+Default: 0
 
 =head3 color
 
 Setting this option to C<1> enables the support for color and text formatting escape sequences.
 
-If the OS is MSWin32 and this option is enabled, L<Win32::Console::ANSI> is loaded; this module emulates an ANSI
-console.
-
-C<Win32::Console::ANSI> also converts the characters from Windows code page to DOS code page (the so-called ANSI to OEM
-conversion). To disable this character conversion set the option I<codepage_mapping> to C<0>.
+If the OS is MSWin32 and this option is enabled, C<Term::Choose> loads L<Win32::Console::ANSI>. C<Win32::Console::ANSI>
+emulates an ANSI console. See also the option L</codepage_mapping>.
 
 Default: 0
 
