@@ -1,6 +1,9 @@
 Revision history for Term::TablePrint
 
 
+0.102   2018-11-28
+        - Update of the format of numbers.
+
 0.101   2018-11-24
         - Don't enable codepage mapping if 'color' is set to avoid two different defaults.
 
