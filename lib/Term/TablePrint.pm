@@ -4,7 +4,7 @@ use warnings;
 use strict;
 use 5.008003;
 
-our $VERSION = '0.102';
+our $VERSION = '0.103';
 use Exporter 'import';
 our @EXPORT_OK = qw( print_table );
 
@@ -148,7 +148,12 @@ sub print_table {
     $self->{plugin}->__hide_cursor();
     if ( $self->{choose_columns}  ) {
         $self->{orig_col_idxs} = $self->__choose_columns( $table_ref->[0] );
-        return if ! defined $self->{orig_col_idxs};
+        if ( ! defined $self->{orig_col_idxs} ) {
+            return;
+        }
+        if ( ! @{$self->{orig_col_idxs}} ) {
+            $self->{orig_col_idxs} = [ 0 .. $#{$table_ref->[0]} ];
+        }
     }
     else {
         $self->{orig_col_idxs} = [ 0 .. $#{$table_ref->[0]} ];
@@ -738,7 +743,7 @@ Term::TablePrint - Print a table to the terminal and browse it interactively.
 
 =head1 VERSION
 
-Version 0.102
+Version 0.103
 
 =cut
 
@@ -899,6 +904,8 @@ Default: 0
 
 If I<choose_columns> is set to 1, the user can choose which columns to print. Columns can be added (with the
 C<SpaceBar> and the C<Return> key) until the user confirms with the I<-ok-> menu entry.
+
+Confirming without any selected columns selects all columns.
 
 Default: 0
 
