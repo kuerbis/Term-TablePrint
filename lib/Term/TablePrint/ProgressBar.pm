@@ -50,8 +50,8 @@ sub set_progress_bar {
     $self->{step} = int( $self->{total} / $self->{bar_w} || 1 );
     my $count;
     if ( $self->{type} eq 'multi' ) {
-        $self->{next_update} = $self->{step};
         $count = 0;
+        $self->{next_update} = $self->{step};
     }
     else {
         $count = $self->{so_far} || 0;

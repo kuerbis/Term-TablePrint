@@ -136,7 +136,7 @@ sub print_table {
     }
     $self->__set_defaults();
     if ( print_columns( $self->{decimal_separator} ) != 1 ) {
-        $self->{decimal_separator} = ',';
+        $self->{decimal_separator} = '.';
     }
     if ( $self->{decimal_separator} ne '.' ) {
         $self->{thsd_sep} = '_';
@@ -484,7 +484,6 @@ sub __cols_to_string {
     else {
         $tab = ' ' x $self->{tab_w};
     }
-    my $extra_w = print_columns( $self->{decimal_separator} ) - 1;
     for my $col ( 0 .. $#$w_cols ) {
         if ( $w_cols->[$col] - $self->{w_int}[$col] < $self->{w_fract}[$col] ) {
             $self->{w_fract}[$col] = $w_cols->[$col] - $self->{w_int}[$col];
