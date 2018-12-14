@@ -67,7 +67,7 @@ sub __validate_options {
         color             => '[ 0 1 ]',
         keep_header       => '[ 0 1 ]',
         squash_spaces     => '[ 0 1 ]',
-        grid              => '[ 0 1 2 ]', # ###
+        grid              => '[ 0 1 2 ]',
         table_expand      => '[ 0 1 2 ]',
         mouse             => '[ 0 1 2 3 4 ]',
         binary_string     => '',
@@ -209,7 +209,7 @@ sub __recursive_code {
     }
     if ( $self->{keep_header} ) {
         my $col_names = shift @$list;
-        push @header, $self->__header_sep( $w_cols ) if $self->{grid} == 2; # ###
+        push @header, $self->__header_sep( $w_cols ) if $self->{grid} == 2;
         push @header, $col_names;
         push @header, $self->__header_sep( $w_cols ) if $self->{grid};
     }
