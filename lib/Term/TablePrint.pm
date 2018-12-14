@@ -4,7 +4,7 @@ use warnings;
 use strict;
 use 5.008003;
 
-our $VERSION = '0.105';
+our $VERSION = '0.106';
 use Exporter 'import';
 our @EXPORT_OK = qw( print_table );
 
@@ -65,9 +65,9 @@ sub __validate_options {
         binary_filter     => '[ 0 1 ]',
         codepage_mapping  => '[ 0 1 ]',
         color             => '[ 0 1 ]',
-        grid              => '[ 0 1 ]',
         keep_header       => '[ 0 1 ]',
         squash_spaces     => '[ 0 1 ]',
+        grid              => '[ 0 1 2 ]', # ###
         table_expand      => '[ 0 1 2 ]',
         mouse             => '[ 0 1 2 3 4 ]',
         binary_string     => '',
@@ -209,6 +209,7 @@ sub __recursive_code {
     }
     if ( $self->{keep_header} ) {
         my $col_names = shift @$list;
+        push @header, $self->__header_sep( $w_cols ) if $self->{grid} == 2; # ###
         push @header, $col_names;
         push @header, $self->__header_sep( $w_cols ) if $self->{grid};
     }
@@ -612,7 +613,7 @@ sub __print_single_row {
         $key =~ s/[\p{Cc}\p{Noncharacter_Code_Point}\p{Cs}]//g;
         $key = cut_to_printwidth( $key, $len_key );
         my $copy_sep = $separator;
-        my $value = $orig_tbl->[$row][$col] || '';
+        my $value = $orig_tbl->[$row][$col];
         if ( ! defined $value || ! length $value ) {
             $value = ' '; # to show also keys/columns with no values
         }
@@ -695,7 +696,7 @@ Term::TablePrint - Print a table to the terminal and browse it interactively.
 
 =head1 VERSION
 
-Version 0.105
+Version 0.106
 
 =cut
 
