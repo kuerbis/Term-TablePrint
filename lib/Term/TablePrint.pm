@@ -178,7 +178,7 @@ sub print_table {
     my $table_rows = @$table_ref - 1;
     if ( $self->{max_rows} && $table_rows >= $self->{max_rows} ) {
         $self->{info_row} = sprintf( 'Reached the row LIMIT %s', insert_sep( $self->{max_rows}, $self->{thsd_sep} ) );
-        # App::DBBrowser: $table_rows already cut to $self->{max_rows}, so total rows are not known at this pointe.
+        # App::DBBrowser: $table_rows already cut to $self->{max_rows} so total rows are not known at this point.
         # Therefore add 'total' only if $table_rows > $self->{max_rows}
         if ( $table_rows > $self->{max_rows} ) {
             $self->{info_row} .= sprintf( '  (total %s)', insert_sep( $table_rows, $self->{thsd_sep} ) );
