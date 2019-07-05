@@ -1,6 +1,9 @@
 Revision history for Term::TablePrint
 
 
+0.115   2019-07-05
+        - Restored code.
+
 0.114   2019-07-04
         - Removed automatic color reset.
         - DESTROY: call SHOW_CURSOR only if the option 'hide_cursor' is enabled.

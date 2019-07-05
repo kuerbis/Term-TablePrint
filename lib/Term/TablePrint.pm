@@ -4,7 +4,7 @@ use warnings;
 use strict;
 use 5.008003;
 
-our $VERSION = '0.114';
+our $VERSION = '0.115';
 use Exporter 'import';
 our @EXPORT_OK = qw( print_table );
 
@@ -164,7 +164,7 @@ sub print_table {
     if ( defined $opt ) {
         croak "print_table: the (optional) second argument is not a HASH reference."   if ref $opt ne 'HASH';
         my $valid = $self->__valid_options();
-        $self->Term::Choose::__validate_and_add_options( $valid, $opt );
+        $self->__validate_and_add_options( $valid, $opt );
     }
     $self->__set_defaults();
     local $| = 1;
@@ -748,7 +748,7 @@ Term::TablePrint - Print a table to the terminal and browse it interactively.
 
 =head1 VERSION
 
-Version 0.114
+Version 0.115
 
 =cut
 
