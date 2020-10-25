@@ -1027,7 +1027,7 @@ Default: 1
 
 =head3 table_name
 
-If set (string) adds the I<table_name> in the bottom line.
+If set (string), I<table_name> is added in the bottom line.
 
 =head3 undef
 
