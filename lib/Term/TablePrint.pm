@@ -4,7 +4,7 @@ use warnings;
 use strict;
 use 5.008003;
 
-our $VERSION = '0.133';
+our $VERSION = '0.134';
 use Exporter 'import';
 our @EXPORT_OK = qw( print_table );
 
@@ -177,34 +177,22 @@ sub print_table {
         }
         $data_row_count = $self->{max_rows};
     }
-    my $chosen_cols;
-    if ( $self->{choose_columns}  ) {
-        $chosen_cols = $self->__choose_columns( $orig_table );
-        if ( ! defined $chosen_cols ) {
-            $self->__reset();
-            return;
-        }
-        #if ( ! @{$chosen_cols} ) {
-        #    $chosen_cols = [ 0 .. $#{$orig_table->[0]} ];
-        #}
-    }
-    else {
-        $chosen_cols = [ 0 .. $#{$orig_table->[0]} ];
+    if ( $self->{choose_columns} ) { # removed 04.06.2021
+        choose( [ 'Continue with ENTER' ], { prompt => "The option 'choose_columns' has been removed.", layout => 0, clear_screen => 1 } );
     }
     my $progress = Term::TablePrint::ProgressBar->new( {
         data_row_count => $data_row_count,
-        col_count => scalar @{$chosen_cols},
+        col_count => scalar @{$orig_table->[0]},
         threshold => $self->{progress_bar},
         count_progress_bars => 3,
     } );
 
-    my $table_copy = $self->__copy_table( $orig_table, $chosen_cols, $progress );
+    my $table_copy = $self->__copy_table( $orig_table, $progress );
     my ( $w_head, $w_cols, $w_int, $w_fract ) = $self->__calc_col_width( $table_copy, $progress );
     my $cc = {  # The values don't change.
         extra_w        => $^O eq 'MSWin32' || $^O eq 'cygwin' ? 0 : WIDTH_CURSOR,
         data_row_count => $data_row_count,
         info_row       => $info_row,
-        chosen_cols    => $chosen_cols,
         w_head         => $w_head,
         w_cols         => $w_cols,
         w_int          => $w_int,
@@ -233,7 +221,7 @@ sub print_table {
         if ( defined $next ) {
             $progress = Term::TablePrint::ProgressBar->new( {
                 data_row_count => $data_row_count,
-                col_count => scalar @{$chosen_cols},
+                col_count => scalar @{$orig_table->[0]},
                 threshold => $self->{progress_bar},
                 count_progress_bars => 2,
             } );
@@ -268,7 +256,7 @@ sub __write_table {
         if ( $vw->{term_w} ) {
             # If term_w is set, __write_table has been called more
             # than once, which means that table_copy has been overwritten.
-            $table_copy = $self->__copy_table( $orig_table, $cc->{chosen_cols}, $progress );
+            $table_copy = $self->__copy_table( $orig_table, $progress );
         }
         $vw->{term_w} = get_term_width() + $cc->{extra_w};
         $vw->{w_cols_calc} = $self->__calc_avail_col_width( $table_copy, $cc, $vw );
@@ -470,12 +458,12 @@ sub __write_table {
 
 
 sub __copy_table {
-    my ( $self, $orig_table, $chosen_cols, $progress ) = @_;
+    my ( $self, $orig_table, $progress ) = @_;
     my $table_copy = [];
     my $count = $progress->set_progress_bar();            #
     ROW: for my $row ( @$orig_table ) {
         my $tmp_row = [];
-        COL: for ( @{$row}[@{$chosen_cols}] ) {
+        COL: for ( @$row ) {
             my $str = $_; # this is where the copying happens
             $str = $self->{undef}            if ! defined $str;
             $str = _handle_reference( $str ) if ref $str;
@@ -719,47 +707,6 @@ sub __cols_to_string {
 }
 
 
-sub __choose_columns { # removed 04.06.2021
-    my ( $self, $orig_table ) = @_;
-    choose( [ 'Continue with ENTER' ], { prompt => "The option 'choose_columns' has been removed.", layout => 0, clear_screen => 1 } );
-    return [ 0 .. $#{$orig_table->[0]} ];
-}
-#sub __choose_columns {
-#    my ( $self, $orig_table ) = @_;
-#    my $col_idxs = [];
-#    my $ok = '-ok-';
-#    my @pre = ( undef, $ok );
-#    my $init_prompt = 'Columns: ';
-#    my $s_tab = print_columns( $init_prompt );
-#    my @cols = map { defined $_ ? $_ : '<UNDEF>' } @{$orig_table->[0]};
-#
-#    while ( 1 ) {
-#        my @chosen_cols = @$col_idxs ?  @cols[@$col_idxs] : '*';
-#        my $prompt = $init_prompt . join( ', ', @chosen_cols );
-#        my $choices = [ @pre, @cols ];
-#        my @idx = choose(
-#            $choices,
-#            { prompt => $prompt, tabs_prompt => [ 0, $s_tab ], clear_screen => 1, undef => '<<',
-#              meta_items => [ 0 .. $#pre ], index => 1, mouse => $self->{mouse}, include_highlighted => 2,
-#              hide_cursor => 0, codepage_mapping => $self->{codepage_mapping}, f3 => $self->{f3} }
-#        );
-#        if ( ! @idx || $idx[0] == 0 ) {
-#            if ( @$col_idxs ) {
-#                $col_idxs = [];
-#                next;
-#            }
-#            return;
-#        }
-#        elsif ( defined $choices->[$idx[0]] && $choices->[$idx[0]] eq $ok ) {
-#            shift @idx;
-#            push @$col_idxs, map { $_ -= @pre; $_ } @idx;
-#            return @$col_idxs ? $col_idxs : [ 0 .. $#{$orig_table->[0]} ];
-#        }
-#        push @$col_idxs, map { $_ -= @pre; $_ } @idx;
-#    }
-#}
-
-
 sub __print_single_row {
     my ( $self, $orig_table, $cc, $row, $footer ) = @_;
     my $term_w = get_term_width();
@@ -773,7 +720,7 @@ sub __print_single_row {
     my $separator_row = ' ';
     my $row_data = [ ' Close with ENTER' ];
 
-    for my $col ( @{$cc->{chosen_cols}} ) {
+    for my $col ( 0 .. $#{$orig_table->[0]} ) {
         push @$row_data, $separator_row;
         my $key = $orig_table->[0][$col];
         if ( ! defined $key ) {
@@ -844,12 +791,13 @@ sub __search {
         last READ;
     }
     no warnings 'uninitialized';
+    my @col_idx = ( 0 .. $#{$orig_table->[0]} );
     # 1: skipp header row
     # data_row_count: +1 for the head row, -1 the get the 0 based index, so nothing to do
-    for my $idx ( 1 .. $cc->{data_row_count} ) {
-        for ( @{$cc->{chosen_cols}} ) {
-            if ( $orig_table->[$idx][$_] =~ $vs->{filter} ) {
-                push @{$vs->{map_indexes}}, $idx;
+    for my $idx_row ( 1 .. $cc->{data_row_count} ) {
+        for ( @col_idx ) {
+            if ( $orig_table->[$idx_row][$_] =~ $vs->{filter} ) {
+                push @{$vs->{map_indexes}}, $idx_row;
                 last;
             }
         }
@@ -935,7 +883,7 @@ Term::TablePrint - Print a table to the terminal and browse it interactively.
 
 =head1 VERSION
 
-Version 0.133
+Version 0.134
 
 =cut
 

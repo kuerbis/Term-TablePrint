@@ -48,13 +48,7 @@ sub set_progress_bar {
     else {
         $self->{fmt} = "\rComputing: (" . $self->{count_progress_bars} . ") %3d%% [%s]";
     }
-    if ( $term_w < 25 ) {
-        # fmt
-        $self->{short_print} = 1;
-    }
-    else {
-        $self->{short_print} = 0;
-    }
+    $self->{short_print} = $term_w < 25 ? 1 : 0;
     $self->{bar_w} = $term_w - length( sprintf $self->{fmt}, 100, '' ) + 1; # +1: lenght("\r") == 1
     $self->{step} = int( $self->{total} / $self->{bar_w} || 1 );
     my $count;
@@ -86,7 +80,7 @@ sub update_progress_bar {
 sub last_update_progress_bar {
     my ( $self, $count ) = @_;
     if ( $self->{count_progress_bars} &&  $self->{merge_progress_bars} ) {
-            $self->{so_far} = $count;
+        $self->{so_far} = $count;
     }
     else {
         $self->update_progress_bar( $self->{total} );
