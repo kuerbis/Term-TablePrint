@@ -1,6 +1,9 @@
 Revision history for Term::TablePrint
 
 
+0.136   2021-06-11
+        - Removed options 'grid' and 'keep_header'.
+
 0.135   2021-06-10
         - Bugfix option 'grid'.
 

@@ -4,7 +4,7 @@ use warnings;
 use strict;
 use 5.008003;
 
-our $VERSION = '0.135';
+our $VERSION = '0.136';
 use Exporter 'import';
 our @EXPORT_OK = qw( print_table );
 
@@ -56,10 +56,10 @@ sub _valid_options {
         binary_filter     => '[ 0 1 ]',
         codepage_mapping  => '[ 0 1 ]',
         hide_cursor       => '[ 0 1 ]', # documentation
-        keep_header       => '[ 0 1 ]',
+        keep_header       => '[ 0 1 ]', # removed 04.10.2021
         squash_spaces     => '[ 0 1 ]',
         color             => '[ 0 1 2 ]',
-        grid              => '[ 0 1 2 ]',
+        grid              => '[ 0 1 2 ]', # removed 04.10.2021
         f3                => '[ 0 1 2 ]',
         table_expand      => '[ 0 1 2 ]', # '[ 0 1 ]',  04.06.2021
         mouse             => '[ 0 1 2 3 4 ]',
@@ -82,9 +82,9 @@ sub _defaults {
         color             => 0,
         decimal_separator => '.',
         f3                => 1,
-        grid              => 1,
+        grid              => 1, # removed 04.10.2021
         hide_cursor       => 1,
-        keep_header       => 1,
+        keep_header       => 1, # removed 04.10.2021
         squash_spaces     => 0,
         max_rows          => 200000,
         min_col_width     => 30,
@@ -134,13 +134,28 @@ sub print_table {
     die "print_table: requires an ARRAY reference as its first argument."            if ref $orig_table  ne 'ARRAY';
     if ( defined $opt ) {
         die "print_table: the (optional) second argument is not a HASH reference."   if ref $opt ne 'HASH';
+        #######################################################################################################################################
+        if ( exists $opt->{choose_columns} ) { # removed 04.06.2021
+            choose( [ 'Continue with ENTER' ], { prompt => "The option 'choose_columns' has been removed.", layout => 0, clear_screen => 1 } );
+            delete $opt->{choose_columns};
+        }
+        if ( exists $opt->{keep_header} ) { # removed 04.10.2021
+            choose( [ 'Continue with ENTER' ], { prompt => "The option 'keep_header' has been removed.", layout => 0, clear_screen => 1 } );
+            delete $opt->{keep_header};
+        }
+        if ( exists $opt->{grid} ) { # removed 04.10.2021
+            choose( [ 'Continue with ENTER' ], { prompt => "The option 'grid' has been removed.", layout => 0, clear_screen => 1 } );
+            delete $opt->{grid};
+        }
+        ########################################################################################################################################
         validate_options( _valid_options(), $opt );
         for my $key ( keys %$opt ) {
             $self->{$key} = $opt->{$key} if defined $opt->{$key};
         }
     }
+
     $self->{tab_w} = $self->{tab_width};
-    if ( $self->{grid} && ! ( $self->{tab_width} % 2 ) ) {
+    if ( ! ( $self->{tab_width} % 2 ) ) {
         ++$self->{tab_w};
     }
     local $| = 1;
@@ -176,9 +191,6 @@ sub print_table {
             $info_row .= sprintf( '  (total %s)', insert_sep( $data_row_count, $self->{thsd_sep} ) );
         }
         $data_row_count = $self->{max_rows};
-    }
-    if ( $self->{choose_columns} ) { # removed 04.06.2021
-        choose( [ 'Continue with ENTER' ], { prompt => "The option 'choose_columns' has been removed.", layout => 0, clear_screen => 1 } );
     }
     my $progress = Term::TablePrint::ProgressBar->new( {
         data_row_count => $data_row_count,
@@ -275,38 +287,13 @@ sub __write_table {
         #}
         #if ( length $self->{info} || length $self->{prompt} ) {
         #    push @{$vw->{header}}, $self->__header_sep( $w_cols_calc );
-        #    if ( $self->{grid} == 2 ) {
-        #        $self->{grid} = 1;
-        #    }
         #}
         $vw->{header} = [];
         if ( length $self->{prompt} ) {
             push @{$vw->{header}}, $self->{prompt};
         }
         my $col_names = shift @{$vw->{print_table}};
-        my $header_sep = $self->__header_sep( $vw );
-        if ( $self->{keep_header} ) {
-            if ( $self->{grid} == 1 ) {
-                push @{$vw->{header}},              $col_names, $header_sep;
-            }
-            elsif ( $self->{grid} == 2 ) {
-                push @{$vw->{header}}, $header_sep, $col_names, $header_sep;
-            }
-            else {
-                push @{$vw->{header}},              $col_names;
-            }
-        }
-        else {
-            if ( $self->{grid} == 1 ) {
-                unshift @{$vw->{print_table}},              $col_names, $header_sep;
-            }
-            elsif ( $self->{grid} == 2 ) {
-                unshift @{$vw->{print_table}}, $header_sep, $col_names, $header_sep;
-            }
-            else {
-                unshift @{$vw->{print_table}},              $col_names;
-            }
-        }
+        push @{$vw->{header}}, $col_names, $self->__header_sep( $vw );
         if ( $cc->{info_row} ) {
             if ( print_columns( $cc->{info_row} ) > $vw->{table_w} ) {
                 push @{$vw->{print_table}}, cut_to_printwidth( $cc->{info_row}, $vw->{table_w} - 3 ) . '...';
@@ -319,27 +306,7 @@ sub __write_table {
     my @filtered_idxs_print_table;
     my $return = $mr->{last};
     if ( $vs->{filter} ) {
-        if ( $self->{keep_header} ) {
-            @filtered_idxs_print_table = map { $_ - 1 } @{$vs->{map_indexes}}; # due to the shifted header row from print_table
-        }
-        else {
-            if ( $self->{grid} ) {
-                @filtered_idxs_print_table = map { $_ + $self->{grid} } @{$vs->{map_indexes}}; # due to the following unshifts
-                if ( $self->{grid} == 1) {
-                    unshift @filtered_idxs_print_table, 0, 1;
-                }
-                elsif ( $self->{grid} == 2 ) {
-                    unshift @filtered_idxs_print_table, 0, 1, 2;
-                }
-                else {
-                    unshift @filtered_idxs_print_table, 0;
-                }
-            }
-        }
-        # __print_single_row: the chosen row-idx was prepared for to use for the $orig_table which has a header row.
-        # If filter is active the same row-idx (with the preparation for the $orig_table) is used to select the value
-        # from map_indexes, hence the following unshift of 0 (as header row)
-        unshift @{$vs->{map_indexes}}, 0;
+        @filtered_idxs_print_table = map { $_ - 1 } @{$vs->{map_indexes}}; # because of the removed header row from $print_table
         $return = $mr->{returned_from_filtered_table};
     }
     my $prompt = join( "\n", @{$vw->{header}} );
@@ -358,7 +325,7 @@ sub __write_table {
         if ( $vw->{term_w} != get_term_width() + $cc->{extra_w} ) {
             return $mr->{window_width_changed};
         }
-        if ( $self->{keep_header} && ! @{$vw->{print_table}} ) {
+        if ( ! @{$vw->{print_table}} ) {
             push @{$vw->{print_table}}, ''; # so that going back requires always the same amount of keystrokes
         }
         $ENV{TC_RESET_AUTO_UP} = 0;
@@ -394,10 +361,7 @@ sub __write_table {
         else {
             if ( $old_row == $row ) {
                 if ( $row == 0 ) {
-                    if ( ! $self->{keep_header} ) {
-                        return $return;
-                    }
-                    elsif ( $self->{table_expand} ) {
+                    if ( $self->{table_expand} ) {
                         if ( $row_is_expanded ) {
                             return $return;
                         }
@@ -426,38 +390,12 @@ sub __write_table {
                 );
                 next;
             }
-            if ( $self->{keep_header} ) { # if keep_header: 1. row in $print_table is 2. row in $orig_table
-                $row++;                   # because $print_table has the header row shifted to the the prompt line
-            }
-            else {
-                if ( $self->{grid} == 1 ) {
-                    if ( $row == 1 ) { # header separator is at pos 1
-                        # $row = 0;
-                        next;
-                    }
-                    if ( $row > 1 ) {
-                        $row--; # due to the added header separator at pos 1
-                    }
-                }
-                elsif ( $self->{grid} == 2 ) {
-                    if ( $row == 0 || $row  == 2 ) { # header separators are at pos 0 and 2
-                        #$row = 1;
-                        next;
-                    }
-                    if ( $row == 1 ) { # header row at pos 1
-                        $row--; # due to the added header separator at pos 0
-                    }
-                    else {
-                        $row -= 2; # due to the added header separators at pos 0 and 2
-                    }
-                }
-            }
             my $orig_row;
             if ( @{$vs->{map_indexes}} ) {
                 $orig_row = $vs->{map_indexes}[$row];
             }
             else {
-                $orig_row = $row;
+                $orig_row = $row + 1; # because $print_table has no header row while $orig_table has a header row
             }
             $self->__print_single_row( $orig_table, $cc, $orig_row, $footer );
         }
@@ -636,13 +574,7 @@ sub __calc_avail_col_width {
 sub __cols_to_string {
     my ( $self, $orig_table, $table_copy, $cc, $vw, $progress ) = @_;
     my $count = $progress->set_progress_bar();            #
-    my $tab;
-    if ( $self->{grid} ) {
-        $tab = ( ' ' x int( $self->{tab_w} / 2 ) ) . '|' . ( ' ' x int( $self->{tab_w} / 2 ) );
-    }
-    else {
-        $tab = ' ' x $self->{tab_w};
-    }
+    my $tab = ( ' ' x int( $self->{tab_w} / 2 ) ) . '|' . ( ' ' x int( $self->{tab_w} / 2 ) );
     my $w_cols_calc = $vw->{w_cols_calc};
     for my $col ( 0 .. $#$w_cols_calc ) {
         if ( $w_cols_calc->[$col] - $cc->{w_int}[$col] < $cc->{w_fract}[$col] ) {
@@ -892,7 +824,7 @@ Term::TablePrint - Print a table to the terminal and browse it interactively.
 
 =head1 VERSION
 
-Version 0.135
+Version 0.136
 
 =cut
 
@@ -1001,14 +933,10 @@ row of the table.
 
 =back
 
-With I<keep_header> disabled the C<Return> key closes the table if the cursor is on the header row.
+If I<table_expand> is set to C<0>, the C<Return> key closes the table if the cursor is on the first row.
 
-If I<keep_header> is enabled and I<table_expand> is set to C<0>, the C<Return> key closes the table if the cursor is on
-the first row.
-
-If I<keep_header> and I<table_expand> are enabled and the cursor is on the first row, pressing C<Return> three times in
-succession closes the table. If the cursor is auto-jumped to the first row, it is required only one C<Return> to close
-the table.
+If I<table_expand> is enabled and the cursor is on the first row, pressing C<Return> three times in succession closes
+the table. If the cursor is auto-jumped to the first row, it is required only one C<Return> to close the table.
 
 If the cursor is not on the first row:
 
@@ -1022,8 +950,7 @@ with the option I<table_expand> disabled the cursor jumps to the table head if C
 
 with the option I<table_expand> enabled each column of the selected row is output in its own line preceded by the
 column name if C<Return> is pressed. Another C<Return> closes this output and goes back to the table output. If a row is
-selected twice in succession, the pointer jumps to the head of the table or to the first row if I<keep_header> is
-enabled.
+selected twice in succession, the pointer jumps to the first row.
 
 =back
 
@@ -1090,37 +1017,6 @@ Set the behavior of the C<F3> key.
 1 - case-insensitive search
 
 2 - case-sensitive search
-
-Default: 1
-
-=head3 grid
-
-If I<grid> is set to 0, the table is shown with no grid.
-
-If I<grid> is set to 1, lines separate the columns from each other and the header from the body.
-
-    .----------------------------.
-    |col1 | col2   | col3 | col3 |
-    |-----|--------|------|------|
-    |.... | ...... | .... | .... |
-    |.... | ...... | .... | .... |
-    |.... | ...... | .... | .... |
-    |.... | ...... | .... | .... |
-    |.... | ...... | .... | .... |
-    |.... | ...... | .... | .... |
-    |.... | ...... | .... | .... |
-    |.... | ...... | .... | .... |
-    '----------------------------'
-
-I<grid> set to 2 is like I<grid> set to 1 plus a separator line on top of the header row.
-
-Default: 1
-
-=head3 keep-header
-
-If I<keep-header> is set to 0, the table header is shown on top of the first page.
-
-If I<keep-header> is set to 1, the table header is shown on top of each page.
 
 Default: 1
 
