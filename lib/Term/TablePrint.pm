@@ -4,9 +4,11 @@ use warnings;
 use strict;
 use 5.008003;
 
-our $VERSION = '0.137';
+our $VERSION = '0.138';
 use Exporter 'import';
 our @EXPORT_OK = qw( print_table );
+
+use Carp qw( croak );
 
 use List::Util   qw( sum max );
 use Scalar::Util qw( looks_like_number );
@@ -30,11 +32,11 @@ my $save_memory = 0;
 
 sub new {
     my $class = shift;
-    die "new: called with " . @_ . " arguments - 0 or 1 arguments expected." if @_ > 1;
+    croak "new: called with " . @_ . " arguments - 0 or 1 arguments expected." if @_ > 1;
     my ( $opt ) = @_;
     my $instance_defaults = _defaults();
     if ( defined $opt ) {
-        die "new: The (optional) argument is not a HASH reference." if ref $opt ne 'HASH';
+        croak "new: The (optional) argument is not a HASH reference." if ref $opt ne 'HASH';
         validate_options( _valid_options(), $opt );
         for my $key ( keys %$opt ) {
             $instance_defaults->{$key} = $opt->{$key} if defined $opt->{$key};
@@ -47,7 +49,7 @@ sub new {
 
 
 sub _valid_options {
-    return {
+    return { # info
         max_rows          => '[ 0-9 ]+',
         min_col_width     => '[ 0-9 ]+',
         progress_bar      => '[ 0-9 ]+',
@@ -130,10 +132,10 @@ sub print_table {
     }
     my $self = shift;
     my ( $tbl_orig, $opt ) = @_;
-    die "print_table: called with " . @_ . " arguments - 1 or 2 arguments expected." if @_ < 1 || @_ > 2;
-    die "print_table: requires an ARRAY reference as its first argument."            if ref $tbl_orig  ne 'ARRAY';
+    croak "print_table: called with " . @_ . " arguments - 1 or 2 arguments expected." if @_ < 1 || @_ > 2;
+    croak "print_table: requires an ARRAY reference as its first argument."            if ref $tbl_orig  ne 'ARRAY';
     if ( defined $opt ) {
-        die "print_table: the (optional) second argument is not a HASH reference."   if ref $opt ne 'HASH';
+        croak "print_table: the (optional) second argument is not a HASH reference."   if ref $opt ne 'HASH';
         #######################################################################################################################################
         if ( exists $opt->{choose_columns} ) { # removed 04.06.2021
             choose( [ 'Continue with ENTER' ], { prompt => "The option 'choose_columns' has been removed.", layout => 0, clear_screen => 1 } );
@@ -694,8 +696,8 @@ sub __print_single_row {
     my $regex = qr/^\Q$separator_row\E\z/;
     choose(
         $row_data,
-        { prompt => '', layout => 3, clear_screen => 1, mouse => $self->{mouse},
-          hide_cursor => 0, f3 => $self->{f3}, skip_items => "$regex", footer => $footer }
+        { prompt => '', layout => 3, clear_screen => 1, mouse => $self->{mouse}, hide_cursor => 0, f3 => $self->{f3},
+          skip_items => $regex, footer => $footer }
     );
 }
 
@@ -825,7 +827,7 @@ Term::TablePrint - Print a table to the terminal and browse it interactively.
 
 =head1 VERSION
 
-Version 0.137
+Version 0.138
 
 =cut
 
@@ -882,13 +884,13 @@ If an element looks like a number it is left-justified, else it is right-justifi
 The C<new> method returns a C<Term::TablePrint> object. As an argument it can be passed a reference to a hash which
 holds the options - the available options are listed in L</OPTIONS>.
 
-    my $tp = Term::TablePrint->new( [ \%options ] );
+    my $tp = Term::TablePrint->new( \%options );
 
 =head2 print_table
 
 The C<print_table> method prints the table passed with the first argument.
 
-    $tp->print_table( $array_ref, [ \%options ] );
+    $tp->print_table( $array_ref, \%options );
 
 The first argument is a reference to an array of arrays. The first array of these arrays holds the column names. The
 following arrays are the table rows where the elements are the field values.
@@ -902,7 +904,7 @@ listed in L</OPTIONS>.
 
 The C<print_table> subroutine prints the table passed with the first argument.
 
-    print_table( $array_ref, [ \%options ] );
+    print_table( $array_ref, \%options );
 
 The subroutine C<print_table> takes the same arguments as the method L</print_table>.
 
@@ -924,8 +926,8 @@ the C<PageUp> key (or C<Ctrl-B>) to go back one page, the C<PageDown> key (or C<
 
 =item *
 
-the C<Insert> key to go back 10 pages, the C<Delete> key to go forward 10 pages (20 instead of 10 pages if the page
-count is greater than 10_000).
+the C<Insert> key to go back 10 pages, the C<Delete> key to go forward 10 pages (20 pages if the page-count is greater
+than 10_000).
 
 =item *
 
@@ -1092,7 +1094,7 @@ Default: "" (empty string)
 
 =head1 ERROR HANDLING
 
-C<print_table> dies
+C<print_table> croaks
 
 =over
 
