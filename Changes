@@ -1,6 +1,9 @@
 Revision history for Term::TablePrint
 
 
+0.141   2021-07-22
+        - Update error handlng search function.
+
 0.140   2021-07-11
         - Term::Choose minimum version 1.734.
 
