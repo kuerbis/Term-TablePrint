@@ -4,7 +4,7 @@ use warnings;
 use strict;
 use 5.008003;
 
-our $VERSION = '0.143';
+our $VERSION = '0.144';
 use Exporter 'import';
 our @EXPORT_OK = qw( print_table );
 
@@ -37,7 +37,7 @@ sub new {
     my $instance_defaults = _defaults();
     if ( defined $opt ) {
         croak "new: The (optional) argument is not a HASH reference." if ref $opt ne 'HASH';
-        validate_options( _valid_options(), $opt );
+        validate_options( _valid_options(), $opt, 'new' );
         for my $key ( keys %$opt ) {
             $instance_defaults->{$key} = $opt->{$key} if defined $opt->{$key};
         }
@@ -166,7 +166,7 @@ sub print_table {
             print hide_cursor;
         }
         ###############################################################################################
-        validate_options( _valid_options(), $opt );
+        validate_options( _valid_options(), $opt, 'print_table' );
         for my $key ( keys %$opt ) {
             $self->{$key} = $opt->{$key} if defined $opt->{$key};
         }
@@ -857,7 +857,7 @@ Term::TablePrint - Print a table to the terminal and browse it interactively.
 
 =head1 VERSION
 
-Version 0.143
+Version 0.144
 
 =cut
 
@@ -1089,7 +1089,7 @@ String displayed above the table.
 
 =head3 search
 
-Set the behavior of C<Ctrl-F> key.
+Set the behavior of C<Ctrl-F>.
 
 0 - off
 
