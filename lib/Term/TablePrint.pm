@@ -4,7 +4,7 @@ use warnings;
 use strict;
 use 5.008003;
 
-our $VERSION = '0.146';
+our $VERSION = '0.147';
 use Exporter 'import';
 our @EXPORT_OK = qw( print_table );
 
@@ -547,7 +547,7 @@ sub __calc_avail_col_width {
                 last HEAD;
             }
         }
-        return $w_cols_calc;
+        return $w_cols_calc; ##
     }
     elsif ( $sum > $avail_w ) {
         my @w_cols_tmp = @$w_cols_calc;
@@ -620,7 +620,7 @@ sub __calc_avail_col_width {
                 }
             }
         }
-        $w_cols_calc = [ @w_cols_tmp ] if @w_cols_tmp;
+        $w_cols_calc = [ @w_cols_tmp ] if @w_cols_tmp; ##
     }
     return $w_cols_calc;
 }
@@ -657,7 +657,12 @@ sub __cols_to_string {
                 if ( defined $1 ) {
                     $all = $1 . $all;
                 }
-                $str = $str . ' ' x ( $w_cols_calc->[$col] - length $all ) . $all;
+                if ( length $all > $w_cols_calc->[$col] ) {
+                    $str = $str . substr( $all, 0, $w_cols_calc->[$col] );
+                }
+                else {
+                    $str = $str . ' ' x ( $w_cols_calc->[$col] - length $all ) . $all;
+                }
             }
             else {
                 $str = $str . unicode_sprintf( $tbl_copy->[$row][$col], $w_cols_calc->[$col] );
@@ -880,7 +885,7 @@ Term::TablePrint - Print a table to the terminal and browse it interactively.
 
 =head1 VERSION
 
-Version 0.146
+Version 0.147
 
 =cut
 
@@ -916,8 +921,6 @@ If the terminal is too narrow to print the table, the columns are adjusted to th
 
 If the option L</table_expand> is enabled and a row is selected with C<Return>, each column of that row is output in its
 own line preceded by the column name. This might be useful if the columns were cut due to the too low terminal width.
-
-=head1 USAGE
 
 =head2 KEYS
 

@@ -1,6 +1,9 @@
 Revision history for Term::TablePrint
 
 
+0.147   2021-10-18
+        - Bugfix in 'cols_to_string'.
+
 0.146   2021-10-18
         - New option 'trunc_frac_first'.
         - Search regex without 'qr'.
