@@ -559,7 +559,7 @@ sub __calc_avail_col_width {
                     if (   $cc->{w_fract}[$col] && $cc->{w_fract}[$col] > 3
                         # 3 == 1 decimal separator + 2 decimal places,
                         && $cc->{w_int}[$col] + $cc->{w_fract}[$col] == $w_cols_tmp[$col]
-                        # the column width could be larger than w_int + w_fract, if the column contains also non-digit text strings
+                        # the column width could be larger than w_int + w_fract, if the column contains non-digit strings
                     ) {
                         --$cc->{w_fract}[$col];
                         --$w_cols_tmp[$col];
