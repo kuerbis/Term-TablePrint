@@ -4,7 +4,7 @@ use warnings;
 use strict;
 use 5.008003;
 
-our $VERSION = '0.147';
+our $VERSION = '0.148';
 use Exporter 'import';
 our @EXPORT_OK = qw( print_table );
 
@@ -68,7 +68,7 @@ sub _valid_options {
         table_expand      => '[ 0 1 2 ]', # '[ 0 1 ]',  04.06.2021
         keep              => '[ 1-9 ][ 0-9 ]*', # undocumented
         max_rows          => '[ 0-9 ]+',
-        min_col_width     => '[ 0-9 ]+',
+        min_col_width     => '[ 0-9 ]+', ##
         progress_bar      => '[ 0-9 ]+',
         tab_width         => '[ 0-9 ]+',
         binary_string     => 'Str',
@@ -547,22 +547,20 @@ sub __calc_avail_col_width {
                 last HEAD;
             }
         }
-        return $w_cols_calc; ##
     }
     elsif ( $sum > $avail_w ) {
-        my @w_cols_tmp = @$w_cols_calc;
         if ( $self->{trunc_fract_first} ) {
 
             TRUNC_FRACT: while ( $sum > $avail_w ) {
                 my $prev_sum = $sum;
-                for my $col ( 0 .. $#w_cols_tmp ) {
+                for my $col ( 0 .. $#$w_cols_calc ) {
                     if (   $cc->{w_fract}[$col] && $cc->{w_fract}[$col] > 3
-                        # 3 == 1 decimal separator + 2 decimal places,
-                        && $cc->{w_int}[$col] + $cc->{w_fract}[$col] == $w_cols_tmp[$col]
+                        # 3 == 1 decimal separator + 2 decimal places
+                        && $cc->{w_int}[$col] + $cc->{w_fract}[$col] == $w_cols_calc->[$col]
                         # the column width could be larger than w_int + w_fract, if the column contains non-digit strings
                     ) {
                         --$cc->{w_fract}[$col];
-                        --$w_cols_tmp[$col];
+                        --$w_cols_calc->[$col];
                         --$sum;
                         if ( $sum == $avail_w ) {
                             last TRUNC_FRACT;
@@ -574,54 +572,55 @@ sub __calc_avail_col_width {
                 }
             }
         }
-        my $min_width = $self->{min_col_width} || 1;
+        my $min_col_width = $self->{min_col_width} < 2 ? 2 : $self->{min_col_width};
         my $percent = 4;
 
         TRUNC_COLS: while ( $sum > $avail_w ) {
             ++$percent;
-            for my $col ( 0 .. $#w_cols_tmp ) {
-                if ( $w_cols_tmp[$col] > $min_width ) {
-                    my $reduced_col_w = _minus_x_percent( $w_cols_tmp[$col], $percent );
-                    if ( $reduced_col_w < $min_width ) {
-                        $w_cols_tmp[$col] = $min_width;
+            for my $col ( 0 .. $#$w_cols_calc ) {
+                if ( $w_cols_calc->[$col] > $min_col_width ) {
+                    my $reduced_col_w = _minus_x_percent( $w_cols_calc->[$col], $percent );
+                    if ( $reduced_col_w < $min_col_width ) {
+                        $w_cols_calc->[$col] = $min_col_width;
                     }
                     else {
-                        $w_cols_tmp[$col] = $reduced_col_w;
+                        $w_cols_calc->[$col] = $reduced_col_w;
                     }
                 }
             }
             my $prev_sum = $sum;
-            $sum = sum( @w_cols_tmp );
+            $sum = sum( @$w_cols_calc );
             if ( $sum == $prev_sum ) {
-                --$min_width;
-                $percent = 0;
-            }
-            if ( $min_width == 1 ) { # a character could have a print width of 2
-                $self->__print_term_not_wide_enough_message( $tbl_copy );
-                return;
+                --$min_col_width;
+                if ( $min_col_width == 1 ) { # a character could have a print width of 2
+                    $self->__print_term_not_wide_enough_message( $tbl_copy );
+                    return;
+                }
             }
         }
-        my $unused_w = $avail_w - $sum;
-        if ( $unused_w ) {
+        my $remainder_w = $avail_w - $sum;
+        if ( $remainder_w ) {
 
-            UNUSED_W: while ( 1 ) {
-                my $prev_unused_w = $unused_w;
-                for my $col ( 0 .. $#w_cols_tmp ) {
-                    if ( $w_cols_tmp[$col] < $w_cols_calc->[$col] ) {
-                        ++$w_cols_tmp[$col];
-                        --$unused_w;
-                        if ( $unused_w == 0 ) {
-                            last UNUSED_W;
+            REMAINDER_W: while ( 1 ) {
+                my $prev_remainder_w = $remainder_w;
+                for my $col ( 0 .. $#$w_cols_calc ) {
+                    if ( $w_cols_calc->[$col] < $cc->{w_cols}[$col] ) {
+                        ++$w_cols_calc->[$col];
+                        --$remainder_w;
+                        if ( $remainder_w == 0 ) {
+                            last REMAINDER_W;
                         }
                     }
                 }
-                if ( $unused_w == $prev_unused_w ) {
-                    last UNUSED_W;
+                if ( $remainder_w == $prev_remainder_w ) {
+                    last REMAINDER_W;
                 }
             }
         }
-        $w_cols_calc = [ @w_cols_tmp ] if @w_cols_tmp; ##
     }
+    #else {
+    #    #$sum == $avail_w
+    #}
     return $w_cols_calc;
 }
 
@@ -885,7 +884,7 @@ Term::TablePrint - Print a table to the terminal and browse it interactively.
 
 =head1 VERSION
 
-Version 0.147
+Version 0.148
 
 =cut
 
