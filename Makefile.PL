@@ -47,7 +47,7 @@ WriteMakefile(
         'Scalar::Util'            => 0,
         'Term::Choose'            => '1.757',
         'Term::Choose::Util'      => '0.137',
-        'Term::Form::ReadLine'    => '0.5552',
+        'Term::Form::ReadLine'    => '0.552',
         %prereqs_os_specific,
     },
     dist  => {
