@@ -4,7 +4,7 @@ use warnings;
 use strict;
 use 5.10.0;
 
-our $VERSION = '0.155';
+our $VERSION = '0.156';
 use Exporter 'import';
 our @EXPORT_OK = qw( print_table );
 
@@ -56,7 +56,7 @@ sub _valid_options {
         squash_spaces     => '[ 0 1 ]',
         table_expand      => '[ 0 1 ]',
         trunc_fract_first => '[ 0 1 ]',
-        binary_filter     => '[ 0 1 2 3 ]',
+        binary_filter     => '[ 0 1 2 ]',
         color             => '[ 0 1 2 ]',
         page              => '[ 0 1 2 ]', # undocumented
         search            => '[ 0 1 2 ]', #
@@ -910,7 +910,7 @@ Term::TablePrint - Print a table to the terminal and browse it interactively.
 
 =head1 VERSION
 
-Version 0.155
+Version 0.156
 
 =cut
 

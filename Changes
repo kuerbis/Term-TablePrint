@@ -1,6 +1,9 @@
 Revision history for Term::TablePrint
 
 
+0.156   2023-03-12
+        - Bugfix validation option 'binary_filter'
+
 0.155   2023-03-11
         - Bugfix documentation column alignment.
         - Option 'max_rows' disabled by default.
