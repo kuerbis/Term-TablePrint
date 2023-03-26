@@ -1138,7 +1138,7 @@ Enable the support for ANSI SGR escape sequences.
 
 2 - enabled
 
-Numbers with added escape squences are aligned to the left.
+Numbers with added escape sequences are aligned to the left.
 
 Default: 0
 
