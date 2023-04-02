@@ -4,7 +4,7 @@ use warnings;
 use strict;
 use 5.10.0;
 
-our $VERSION = '0.157';
+our $VERSION = '0.158';
 use Exporter 'import';
 our @EXPORT_OK = qw( print_table );
 
@@ -143,7 +143,6 @@ sub print_table {
             $self->{$key} = $opt->{$key} if defined $opt->{$key};
         }
     }
-
     $self->{tab_w} = $self->{tab_width};
     if ( ! ( $self->{tab_width} % 2 ) ) {
         ++$self->{tab_w};
@@ -398,7 +397,13 @@ sub __copy_table {
                 $str =~ s/\e\[[\d;]*m/\x{feff}/g;
             }
             if ( $self->{binary_filter} && substr( $str, 0, 100 ) =~ /[\x00-\x08\x0B-\x0C\x0E-\x1F]/ ) {
-                $str = $self->{binary_filter} == 2 ? sprintf("%v02X", $str) =~ tr/./ /r : $self->{binary_string};
+                #$str = $self->{binary_filter} == 2 ? sprintf("%v02X", $str) =~ tr/./ /r : $self->{binary_string};  # perl 5.14
+                if ( $self->{binary_filter} == 2 ) {
+                    ( $str = sprintf("%v02X", $str) ) =~ tr/./ /;
+                }
+                else {
+                    $str = $self->{binary_string};
+                }
             }
             $str =~ s/\t/ /g;
             $str =~ s/\v+/\ \ /g;
@@ -726,7 +731,13 @@ sub __print_single_row {
         push @$row_data, $separator_row;
         my $key = $tbl_orig->[0][$col] // $self->{undef};
         if ( $self->{binary_filter} && substr( $key, 0, 100 ) =~ /[\x00-\x08\x0B-\x0C\x0E-\x1F]/ ) {
-            $key = $self->{binary_filter} == 2 ? sprintf("%v02X", $key) =~ tr/./ /r : $self->{binary_string};
+            #$key = $self->{binary_filter} == 2 ? sprintf("%v02X", $key) =~ tr/./ /r : $self->{binary_string};  # perl 5.14
+            if ( $self->{binary_filter} == 2 ) {
+                ( $key = sprintf("%v02X", $key) ) =~ tr/./ /;
+            }
+            else {
+                $key = $self->{binary_string};
+            }
         }
         my @color;
         if ( $self->{color} ) {
@@ -756,7 +767,13 @@ sub __print_single_row {
             $value = _handle_reference( $value );
         }
         if ( $self->{binary_filter} && substr( $value, 0, 100 ) =~ /[\x00-\x08\x0B-\x0C\x0E-\x1F]/ ) {
-            $value = $self->{binary_filter} == 2 ? sprintf("%v02X", $value) =~ tr/./ /r : $self->{binary_string};
+            #$value = $self->{binary_filter} == 2 ? sprintf("%v02X", $value) =~ tr/./ /r : $self->{binary_string};  # perl 5.14
+            if ( $self->{binary_filter} == 2 ) {
+                ( $value = sprintf("%v02X", $value) ) =~ tr/./ /;
+            }
+            else {
+                $value = $self->{binary_string};
+            }
         }
         if ( $self->{color} ) {
             # color is reset only at the end of a table row
@@ -923,7 +940,7 @@ Term::TablePrint - Print a table to the terminal and browse it interactively.
 
 =head1 VERSION
 
-Version 0.157
+Version 0.158
 
 =cut
 
