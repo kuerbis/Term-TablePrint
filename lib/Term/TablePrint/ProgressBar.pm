@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use 5.16.0;
 
-our $VERSION = '0.174';
+our $VERSION = '0.175_01';
 
 use Term::Choose::Constants qw( EXTRA_W );
 use Term::Choose::Screen    qw( clear_screen clear_to_end_of_line );
@@ -68,7 +68,7 @@ Term::TablePrint::ProgressBar - Show a progress bar.
 
 =head1 VERSION
 
-Version 0.174
+Version 0.175_01
 
 =cut
 
@@ -82,7 +82,7 @@ Matthäus Kiem <cuer2s@gmail.com>
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright 2013-2025 Matthäus Kiem.
+Copyright 2013-2026 Matthäus Kiem.
 
 This library is free software; you can redistribute it and/or modify it under the same terms as Perl 5.10.0. For
 details, see the full text of the licenses in the file LICENSE.

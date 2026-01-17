@@ -4,7 +4,7 @@ use warnings;
 use strict;
 use 5.16.0;
 
-our $VERSION = '0.174';
+our $VERSION = '0.175_01';
 use Exporter 'import';
 our @EXPORT_OK = qw( print_table );
 
@@ -60,6 +60,7 @@ sub _valid_options {
         color             => '[ 0 1 2 ]',
         page              => '[ 0 1 2 ]', # undocumented
         search            => '[ 0 1 2 ]', #
+        #choose_columns    => '[ 0-9 ]',                                                                                # >>>
         keep              => '[ 1-9 ][ 0-9 ]*', # undocumented
         max_width_exp     => '[ 0-9 ]+',
         max_rows          => '[ 0-9 ]+',
@@ -81,6 +82,7 @@ sub _defaults {
     return {
         binary_filter     => 0,
         binary_string     => 'BNRY',
+        #choose_columns    => 0,                                                                                        # >>>
         codepage_mapping  => 0,
         color             => 0,
         decimal_separator => '.',
@@ -133,6 +135,7 @@ my $last_write_table     = 0;
 my $window_width_changed = 1;
 my $enter_search_string  = 2;
 my $from_filtered_table  = 3;
+
 my $tab_w;
 my $edge_w = 0;
 
@@ -154,10 +157,6 @@ sub print_table {
             $self->{$key} = $opt->{$key} if defined $opt->{$key};
         }
     }
-    $tab_w = $self->{tab_width};
-    if ( ! ( $self->{tab_width} % 2 ) ) {
-        ++$tab_w;
-    }
     if ( $self->{pad_row_edges} ) {
         $edge_w = 1;
     }
@@ -178,7 +177,7 @@ sub print_table {
         # 'choose' functions: Deactivate 'hide_cursor', because if 'hide_cursor' is
         # activated (default), 'choose' activates the cursor before returning.
     }
-    if ( ! @$tbl_orig || !@{$tbl_orig->[0]} ) {
+    if ( ! @$tbl_orig || ! @{$tbl_orig->[0]} ) {
         my $message;
         if ( ! @$tbl_orig ) {
             $message = "'print_table': empty table without header row!";
@@ -242,9 +241,66 @@ sub print_table {
 sub __get_data {
     my ( $self, $tbl_orig ) = @_;
     my $term_w = get_term_width() + EXTRA_W;
+
+    $tab_w = $self->{tab_width};
+
+    if ( ! ( $self->{tab_width} % 2 ) ) {
+        ++$tab_w;   # include the `|`
+    }
+    my $min_w_col = 2; # n # ###
+    #$self->{_used_cols_tbl_orig} = [ 0 .. $#{$tbl_orig->[0]} ];                                                        # >>>
+    #if ( $self->{choose_columns} == 1 ) {                                                                              # >>>
+    #    # Choose                                                                                                       # >>>
+    #    $self->{_used_cols_tbl_orig} = Term::Choose::Util::choose_a_subset(                                            # >>>
+    #        $tbl_orig->[0],                                                                                            # >>>
+    #        { index => 1, all_by_default => 1, keep_chosen => 1, cs_label => 'Chosen columns:',  cs_begin => "\n" }    # >>>
+    #    );                                                                                                             # >>>
+    #    if ( ! defined $self->{_used_cols_tbl_orig} ) {                                                                # >>>
+    #        return;                                                                                                    # >>>
+    #    }                                                                                                              # >>>
+    #}                                                                                                                  # >>>
+    #elsif ( $self->{choose_columns} >= 2 ) {                                                                           # >>>
+    #    $min_w_col = $self->{choose_columns};                                                                          # >>>
+    #}                                                                                                                  # >>>
+
+    #while ( ( $tab_w + $min_w_col ) * $#{$self->{_used_cols_tbl_orig}} + $min_w_col + $edge_w * 2 > $term_w ) {        # >>>
+    #    $tab_w -= 2;                                                                                                   # >>>
+    #    if ( $tab_w < 1 ) {                                                                                            # >>>
+    #        if ( $self->{choose_columns} ) {                                                                           # >>>
+    #            my $avail_w = $term_w - ( $edge_w * 2 + $min_w_col );                                                  # >>>
+    #            my $max_cols = 1 + int( $avail_w / ( 1 + $min_w_col ) );                                               # >>>
+    #            my $total_cols = @{$self->{_used_cols_tbl_orig}};                                                      # >>>
+    #            my $info = "$total_cols columns is too many for the terminal width.";                                  # >>>
+    #            my $cs_label = "Please select up to $max_cols columns:\n";                                             # >>>
+    #            # Choose                                                                                               # >>>
+    #            $self->{_used_cols_tbl_orig} = Term::Choose::Util::choose_a_subset(                                    # >>>
+    #                [ @{$tbl_orig->[0]}[@{$self->{_used_cols_tbl_orig}}] ],                                            # >>>
+    #                { index => 1, all_by_default => 1, keep_chosen => 1, info => $info, cs_label => $cs_label,         # >>>
+    #                cs_begin => "\n" }                                                                                 # >>>
+    #            );                                                                                                     # >>>
+    #            if ( ! defined $self->{_used_cols_tbl_orig} ) {                                                        # >>>
+    #                return;                                                                                            # >>>
+    #            }                                                                                                      # >>>
+    #            $tab_w += 2;                                                                                           # >>>
+    #            #next;                                                                                                 # >>>
+    #        }                                                                                                          # >>>
+    #        else {                                                                                                     # >>>
+    #            $self->__print_term_not_wide_enough_message( [ @{$tbl_orig->[0]}[@{$self->{_used_cols_tbl_orig}}] ] ); # >>>
+    #            return;                                                                                                # >>>
+    #        }                                                                                                          # >>>
+    #    }                                                                                                              # >>>
+    #}                                                                                                                  # >>>
+
+    while ( ( $tab_w + $min_w_col ) * $#{$tbl_orig->[0]} + $min_w_col + $edge_w * 2 > $term_w ) {                       # °°°
+        $tab_w -= 2;                                                                                                    # °°°
+        if ( $tab_w < 1 ) {                                                                                             # °°°
+            $self->__print_term_not_wide_enough_message( $tbl_orig->[0] );                                              # °°°
+            return;
+        }
+    }
     my $items_count = $self->{_last_index} * @{$tbl_orig->[0]}; ##
     my $progress = Term::TablePrint::ProgressBar->new( {
-        total => $self->{_last_index} * 3 + 2, # +2: two of three loops include the header row
+        total => $self->{_last_index} * 3 + 2, # + 2: 2 out of 3 loops include the header.
         show_progress_bar => $self->{progress_bar} < $items_count,
     } );
     my $tbl_copy = $self->__copy_table( $tbl_orig, $progress );
@@ -282,7 +338,7 @@ sub __write_table {
     my @idxs_tbl_print;
     my $return = $last_write_table;
     if ( $self->{_search_regex} ) {
-        @idxs_tbl_print = map { $_ - 1 } @{$self->{_idx_search_matches}}; # because of the removed tbl_print header row
+        @idxs_tbl_print = map { $_ - 1 } @{$self->{_idx_search_matches}}; # because of the removed tbl_print header
         $return = $from_filtered_table;
     }
     my $footer;
@@ -383,8 +439,10 @@ sub __copy_table {
 
     ROW: for my $i ( 0 .. $self->{_last_index} ) {
         my $tmp_row = [];
-        COL: for ( @{$tbl_orig->[$i]} ) {
-            $str = $_; # this is where the copying happens
+        #COL: for my $j ( @{$self->{_used_cols_tbl_orig}} ) {                                                           # >>>
+        #    $str = $tbl_orig->[$i][$j]; # this is where the copying happens                                            # >>>
+        COL: for ( @{$tbl_orig->[$i]} ) {                                                                               # °°°
+            $str = $_; # this is where the copying happens                                                              # °°°
             $str = $self->{undef}            if ! defined $str;
             $str = _handle_reference( $str ) if ref $str;
             if ( $self->{color} ) {
@@ -535,6 +593,7 @@ sub __calc_avail_col_width {
 
         TRUNC_COLS: while ( $sum > $avail_w ) {
             ++$percent;
+
             for my $col ( 0 .. $#$w_cols_calc ) {
                 if ( $w_cols_calc->[$col] > $min_col_width ) {
                     my $reduced_col_w = _minus_x_percent( $w_cols_calc->[$col], $percent );
@@ -559,13 +618,15 @@ sub __calc_avail_col_width {
             }
             my $prev_sum = $sum;
             $sum = sum( @$w_cols_calc );
+
             if ( $sum == $prev_sum ) {
                 --$min_col_width;
-                if ( $min_col_width == 2 ) { # a character could have a print width of 2
-                    $self->__print_term_not_wide_enough_message( $tbl_copy );
+                if ( $min_col_width < 2 ) { # never # ###
+                    $self->__print_term_not_wide_enough_message( $tbl_copy->[0] );
                     return;
                 }
             }
+
         }
         my $remainder_w = $avail_w - $sum;
         if ( $remainder_w ) {
@@ -609,7 +670,7 @@ sub __cols_to_string {
 
         COL: for my $col ( 0 .. $#{$w_cols_calc} ) {
             if ( ! length $tbl_copy->[$row][$col] ) {
-                $str = $str . ' ' x $w_cols_calc->[$col];
+                $str .= ' ' x $w_cols_calc->[$col];
             }
             elsif ( looks_like_number $tbl_copy->[$row][$col] ) {
                 if ( $w_fract->[$col] ) {
@@ -664,8 +725,11 @@ sub __cols_to_string {
                 $str .= adjust_to_printwidth( $tbl_copy->[$row][$col], $w_cols_calc->[$col] );
             }
             if ( $self->{color} ) {
-                if ( defined $tbl_orig->[$row][$col] ) {
-                    my @color = $tbl_orig->[$row][$col] =~ /(${\SGR_ES})/g;
+                #my $orig_col = $self->{_used_cols_tbl_orig}[$col];                                                     # >>>
+                #if ( defined $tbl_orig->[$row][$orig_col] ) {                                                          # >>>
+                #    my @color = $tbl_orig->[$row][$orig_col] =~ /(${\SGR_ES})/g;                                       # >>>
+                if ( defined $tbl_orig->[$row][$col] ) {                                                                # °°°
+                    my @color = $tbl_orig->[$row][$col] =~ /(${\SGR_ES})/g;                                             # °°°
                     if ( @color ) {
                         $str =~ s/${\PH}/shift @color/ge;
                         $str .= "\e[0m";
@@ -696,9 +760,10 @@ sub __cols_to_string {
     return $tbl_copy; # $tbl_copy is now $tbl_print
 }
 
+
 sub __print_single_row {
     my ( $self, $tbl_orig, $row, $w_col_names, $footer ) = @_;
-    my $avail_w = get_term_width() - 1;
+    my $avail_w = get_term_width() - 1; # ###
     if ( $self->{max_width_exp} && $self->{max_width_exp} < $avail_w ) {
         $avail_w = $self->{max_width_exp};
     }
@@ -711,8 +776,9 @@ sub __print_single_row {
     my $max_value_w = $avail_w - ( $max_key_w + $sep_w );
     my $separator_row = ' ';
     my $row_data = [ ' Close with ENTER' ];
-
-    for my $col ( 0 .. $#{$tbl_orig->[0]} ) {
+    #my $cols = $self->{choose_columns} > 1 ? [ 0 .. $#{$tbl_orig->[0]} ] : $self->{_used_cols_tbl_orig};               # >>>
+    #for my $col ( @$cols ) {                                                                                           # >>>
+    for my $col ( 0 .. $#{$tbl_orig->[0]} ) {                                                                           # °°°
         push @$row_data, $separator_row;
         my $key = $tbl_orig->[0][$col] // $self->{undef};
         my @key_color;
@@ -812,10 +878,11 @@ sub __search {
         last READ;
     }
     no warnings 'uninitialized';
-    my @col_idx = ( 0 .. $#{$tbl_orig->[0]} );
+    my @col_idx = ( 0 .. $#{$tbl_orig->[0]} );                                                                          # °°°
     # skip the header row
     for my $idx_row ( 1 .. $self->{_last_index} ) {
-        for ( @col_idx ) {
+        #for ( @{$self->{_used_cols_tbl_orig}} ) {                                                                      # >>>
+        for ( @col_idx ) {                                                                                              # °°°
             if ( $tbl_orig->[$idx_row][$_] =~ /$self->{_search_regex}/ ) {
                 push @{$self->{_idx_search_matches}}, $idx_row;
                 last;
@@ -867,21 +934,16 @@ sub _handle_reference {
 
 
 sub __print_term_not_wide_enough_message {
-    my ( $self, $tbl_copy ) = @_;
-    my $prompt_1 = 'To many columns - terminal window is not wide enough.';
+    my ( $self, $col_names ) = @_;
+    my $info = 'Too many columns; the terminal window is not wide enough.';
+    my $prompt = 'Close with ENTER.';
     # Choose
     choose(
-        [ 'Press ENTER to show the column names.' ],
-        { prompt => $prompt_1, clear_screen => 1, mouse => $self->{mouse}, hide_cursor => 0 }
-    );
-    my $prompt_2 = 'Column names (close with ENTER).';
-    # Choose
-    choose(
-        $tbl_copy->[0],
-        { prompt => $prompt_2, clear_screen => 1, mouse => $self->{mouse}, hide_cursor => 0, search => $self->{search} }
+        $col_names,
+        { info => $info, prompt => $prompt, clear_screen => 1, mouse => $self->{mouse}, hide_cursor => 0,
+          search => $self->{search} }
     );
 }
-
 
 sub _minus_x_percent {
     #my ( $value, $percent ) = @_;
@@ -904,7 +966,7 @@ Term::TablePrint - Print a table to the terminal and browse it interactively.
 
 =head1 VERSION
 
-Version 0.174
+Version 0.175_01
 
 =cut
 
@@ -1181,7 +1243,6 @@ Set the I<mouse> mode (see option C<mouse> in L<Term::Choose/OPTIONS>).
 
 Default: 0
 
-
 =head3 pad_row_edges
 
 Add a space at the beginning and end of each row.
@@ -1317,7 +1378,7 @@ Matthäus Kiem <cuer2s@gmail.com>
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright 2013-2025 Matthäus Kiem.
+Copyright 2013-2026 Matthäus Kiem.
 
 This library is free software; you can redistribute it and/or modify it under the same terms as Perl 5.10.0. For
 details, see the full text of the licenses in the file LICENSE.
