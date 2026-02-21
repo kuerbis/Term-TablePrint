@@ -1,6 +1,13 @@
 Revision history for Term::TablePrint
 
 
+0.176   2026-02-21
+        - Renamed 'min_col_with' and 'max_width_exp'.
+        - Reintroduced 'choose_columns'.
+        - New option 'expanded_line_spacing'.
+        - Reduce the tab width if the terminal is not wide enough.
+        - Raised required minimum version for Term::Choose and Term::Choose::LineFold::XS.
+
 0.175_01   2026-01-17
         - Reduce the tab width if the terminal is not wide enough.
         - Update year copyright.

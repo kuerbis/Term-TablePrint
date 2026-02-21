@@ -4,7 +4,7 @@ use warnings;
 use strict;
 use 5.16.0;
 
-our $VERSION = '0.175_01';
+our $VERSION = '0.176';
 use Exporter 'import';
 our @EXPORT_OK = qw( print_table );
 
@@ -33,6 +33,12 @@ sub new {
     my $class = shift;
     croak "new: called with " . @_ . " arguments - 0 or 1 arguments expected." if @_ > 1;
     my ( $opt ) = @_;
+
+    #####
+    #choose( [ 'Continue with ENTER' ], { prompt => "The 'min_col_width' option has been renamed to 'col_trim_threshold'." } ) if exists $opt->{min_col_width}; # 21.02.2026 # ###
+    #choose( [ 'Continue with ENTER' ], { prompt => "The 'max_width_exp' option has been renamed to 'expanded_max_width'." } ) if exists $opt->{max_width_exp}; # 21.02.2026 # ###
+    #####
+
     my $instance_defaults = _defaults();
     if ( defined $opt ) {
         croak "new: The (optional) argument is not a HASH reference." if ref $opt ne 'HASH';
@@ -49,62 +55,66 @@ sub new {
 
 sub _valid_options {
     return {
-        codepage_mapping  => '[ 0 1 ]',
-        hide_cursor       => '[ 0 1 ]', # documentation
-        mouse             => '[ 0 1 ]',
-        squash_spaces     => '[ 0 1 ]',
-        table_expand      => '[ 0 1 ]',
-        trunc_fract_first => '[ 0 1 ]',
-        pad_row_edges     => '[ 0 1 ]',
-        binary_filter     => '[ 0 1 2 ]',
-        color             => '[ 0 1 2 ]',
-        page              => '[ 0 1 2 ]', # undocumented
-        search            => '[ 0 1 2 ]', #
-        #choose_columns    => '[ 0-9 ]',                                                                                # >>>
-        keep              => '[ 1-9 ][ 0-9 ]*', # undocumented
-        max_width_exp     => '[ 0-9 ]+',
-        max_rows          => '[ 0-9 ]+',
-        min_col_width     => '[ 0-9 ]+', ##
-        progress_bar      => '[ 0-9 ]+',
-        tab_width         => '[ 0-9 ]+',
-        binary_string     => 'Str', ##
-        decimal_separator => 'Str',
-        footer            => 'Str',
-        info              => 'Str',
-        prompt            => 'Str',
-        undef             => 'Str',
-        #thsd_sep         => 'Str',
+        codepage_mapping      => '[ 0 1 ]',
+        expanded_line_spacing => '[ 0 1 ]',
+        hide_cursor           => '[ 0 1 ]', # documentation
+        mouse                 => '[ 0 1 ]',
+        squash_spaces         => '[ 0 1 ]',
+        table_expand          => '[ 0 1 ]',
+        trunc_fract_first     => '[ 0 1 ]',
+        pad_row_edges         => '[ 0 1 ]',
+        binary_filter         => '[ 0 1 2 ]',
+        choose_columns        => '[ 0 1 2 ]',
+        color                 => '[ 0 1 2 ]',
+        page                  => '[ 0 1 2 ]', # undocumented
+        search                => '[ 0 1 2 ]', #
+        keep                  => '[ 1-9 ][ 0-9 ]*', # undocumented
+        col_trim_threshold    => '[ 0-9 ]+',
+        max_width_exp         => '[ 0-9 ]+',    # now expanded_max_width # 21.02.2026 # ###
+        expanded_max_width    => '[ 0-9 ]+',
+        max_rows              => '[ 0-9 ]+',
+        min_col_width         => '[ 0-9 ]+',    # now col_trim_threshold # 21.02.2025 # ###
+        progress_bar          => '[ 0-9 ]+',
+        tab_width             => '[ 0-9 ]+',
+        binary_string         => 'Str', ##
+        decimal_separator     => 'Str',
+        footer                => 'Str',
+        info                  => 'Str',
+        prompt                => 'Str',
+        undef                 => 'Str',
+        #thsd_sep             => 'Str',
     };
 }
 
 
 sub _defaults {
     return {
-        binary_filter     => 0,
-        binary_string     => 'BNRY',
-        #choose_columns    => 0,                                                                                        # >>>
-        codepage_mapping  => 0,
-        color             => 0,
-        decimal_separator => '.',
-        #footer           => undef,
-        hide_cursor       => 1,
-        #info             => undef,
-        #keep             => undef,
-        max_rows          => 0,
-        #max_width_exp    => undef,
-        min_col_width     => 30,
-        mouse             => 0,
-        pad_row_edges     => 0,
-        page              => 2, ##
-        progress_bar      => 40000,
-        prompt            => '',
-        search            => 1,
-        squash_spaces     => 0,
-        tab_width         => 2,
-        table_expand      => 1,
-        trunc_fract_first => 1,
-        undef             => '',
-        thsd_sep          => ',', #
+        binary_filter         => 0,
+        binary_string         => 'BNRY',
+        choose_columns        => 0,
+        codepage_mapping      => 0,
+        col_trim_threshold    => 30,
+        color                 => 0,
+        decimal_separator     => '.',
+        expanded_line_spacing => 1,
+        #expanded_max_width   => undef,
+        #footer               => undef,
+        hide_cursor           => 1,
+        #info                 => undef,
+        #keep                 => undef,
+        max_rows              => 0,
+        mouse                 => 0,
+        pad_row_edges         => 0,
+        page                  => 2, ##
+        progress_bar          => 40000,
+        prompt                => '',
+        search                => 1,
+        squash_spaces         => 0,
+        tab_width             => 2,
+        table_expand          => 1,
+        trunc_fract_first     => 1,
+        undef                 => '',
+        thsd_sep              => ',', #
     }
 }
 
@@ -135,6 +145,7 @@ my $last_write_table     = 0;
 my $window_width_changed = 1;
 my $enter_search_string  = 2;
 my $from_filtered_table  = 3;
+my $choose_and_print     = 4;
 
 my $tab_w;
 my $edge_w = 0;
@@ -152,6 +163,12 @@ sub print_table {
     croak "print_table: requires an ARRAY reference as its first argument."            if ref $tbl_orig  ne 'ARRAY';
     if ( defined $opt ) {
         croak "print_table: the (optional) second argument is not a HASH reference."   if ref $opt ne 'HASH';
+
+        #####
+        #choose( [ 'Continue with ENTER' ], { prompt => "The 'min_col_width' option has been renamed to 'col_trim_threshold'." } ) if exists $opt->{min_col_width}; # 21.02.2026 # ###
+        #choose( [ 'Continue with ENTER' ], { prompt => "The 'max_width_exp' option has been renamed to 'expanded_max_width'." } ) if exists $opt->{max_width_exp}; # 21.02.2026 # ###
+        #####
+
         validate_options( _valid_options(), $opt, 'print_table' );
         for my $key ( keys %$opt ) {
             $self->{$key} = $opt->{$key} if defined $opt->{$key};
@@ -217,10 +234,11 @@ sub print_table {
         elsif ( $next == $last_write_table ) {
             last WRITE_TABLE;
         }
-        elsif ( $next == $window_width_changed ) {
-            ( $term_w, $tbl_print, $tbl_w, $header_rows, $w_col_names ) = $self->__get_data( $tbl_orig );
+        elsif ( $next == $window_width_changed || $next == $choose_and_print ) {
+            ( $term_w, $tbl_print, $tbl_w, $header_rows, $w_col_names ) = $self->__get_data( $tbl_orig, $next );
             if ( ! defined $term_w ) {
-                last WRITE_TABLE;
+                $self->__reset();
+                return;
             }
             next WRITE_TABLE;
         }
@@ -234,70 +252,91 @@ sub print_table {
         }
     }
     $self->__reset();
-    return;
+    return 1;
 }
 
 
-sub __get_data {
-    my ( $self, $tbl_orig ) = @_;
-    my $term_w = get_term_width() + EXTRA_W;
+sub __used_columns {
+    my ( $self, $term_w, $tbl_orig, $next ) = @_;
+    my $back = ' << ';
+    my $confirm = '-OK-';
+    my $cols;
 
-    $tab_w = $self->{tab_width};
-
-    if ( ! ( $self->{tab_width} % 2 ) ) {
-        ++$tab_w;   # include the `|`
+    if ( defined $next && $next == $window_width_changed ) {
+        $cols = [ @{$self->{_desired_cols_tbl_orig}} ];
     }
-    my $min_w_col = 2; # n # ###
-    #$self->{_used_cols_tbl_orig} = [ 0 .. $#{$tbl_orig->[0]} ];                                                        # >>>
-    #if ( $self->{choose_columns} == 1 ) {                                                                              # >>>
-    #    # Choose                                                                                                       # >>>
-    #    $self->{_used_cols_tbl_orig} = Term::Choose::Util::choose_a_subset(                                            # >>>
-    #        $tbl_orig->[0],                                                                                            # >>>
-    #        { index => 1, all_by_default => 1, keep_chosen => 1, cs_label => 'Chosen columns:',  cs_begin => "\n" }    # >>>
-    #    );                                                                                                             # >>>
-    #    if ( ! defined $self->{_used_cols_tbl_orig} ) {                                                                # >>>
-    #        return;                                                                                                    # >>>
-    #    }                                                                                                              # >>>
-    #}                                                                                                                  # >>>
-    #elsif ( $self->{choose_columns} >= 2 ) {                                                                           # >>>
-    #    $min_w_col = $self->{choose_columns};                                                                          # >>>
-    #}                                                                                                                  # >>>
-
-    #while ( ( $tab_w + $min_w_col ) * $#{$self->{_used_cols_tbl_orig}} + $min_w_col + $edge_w * 2 > $term_w ) {        # >>>
-    #    $tab_w -= 2;                                                                                                   # >>>
-    #    if ( $tab_w < 1 ) {                                                                                            # >>>
-    #        if ( $self->{choose_columns} ) {                                                                           # >>>
-    #            my $avail_w = $term_w - ( $edge_w * 2 + $min_w_col );                                                  # >>>
-    #            my $max_cols = 1 + int( $avail_w / ( 1 + $min_w_col ) );                                               # >>>
-    #            my $total_cols = @{$self->{_used_cols_tbl_orig}};                                                      # >>>
-    #            my $info = "$total_cols columns is too many for the terminal width.";                                  # >>>
-    #            my $cs_label = "Please select up to $max_cols columns:\n";                                             # >>>
-    #            # Choose                                                                                               # >>>
-    #            $self->{_used_cols_tbl_orig} = Term::Choose::Util::choose_a_subset(                                    # >>>
-    #                [ @{$tbl_orig->[0]}[@{$self->{_used_cols_tbl_orig}}] ],                                            # >>>
-    #                { index => 1, all_by_default => 1, keep_chosen => 1, info => $info, cs_label => $cs_label,         # >>>
-    #                cs_begin => "\n" }                                                                                 # >>>
-    #            );                                                                                                     # >>>
-    #            if ( ! defined $self->{_used_cols_tbl_orig} ) {                                                        # >>>
-    #                return;                                                                                            # >>>
-    #            }                                                                                                      # >>>
-    #            $tab_w += 2;                                                                                           # >>>
-    #            #next;                                                                                                 # >>>
-    #        }                                                                                                          # >>>
-    #        else {                                                                                                     # >>>
-    #            $self->__print_term_not_wide_enough_message( [ @{$tbl_orig->[0]}[@{$self->{_used_cols_tbl_orig}}] ] ); # >>>
-    #            return;                                                                                                # >>>
-    #        }                                                                                                          # >>>
-    #    }                                                                                                              # >>>
-    #}                                                                                                                  # >>>
-
-    while ( ( $tab_w + $min_w_col ) * $#{$tbl_orig->[0]} + $min_w_col + $edge_w * 2 > $term_w ) {                       # °°°
-        $tab_w -= 2;                                                                                                    # °°°
-        if ( $tab_w < 1 ) {                                                                                             # °°°
-            $self->__print_term_not_wide_enough_message( $tbl_orig->[0] );                                              # °°°
+    elsif ( $self->{choose_columns} == 1 ) {
+    #if ( $self->{choose_columns} == 1 ) {
+        # Choose
+        $cols = Term::Choose::Util::choose_a_subset(
+            $tbl_orig->[0],
+            { index => 1, all_by_default => 1, keep_chosen => 1, cs_label => 'Chosen columns:',  cs_begin => "\n",
+              confirm => $confirm, back => $back }
+        );
+        if ( ! defined $cols ) {
             return;
         }
     }
+    else {
+        $cols = [ 0 .. $#{$tbl_orig->[0]} ];
+    }
+    my $min_col_w_th = $self->{choose_columns} ? 3 : 2; # min_col_width_treshold
+    my $desired_cols;
+
+    while ( ( $tab_w + $min_col_w_th ) * $#$cols + $min_col_w_th + $edge_w * 2 > $term_w ) {
+        $tab_w -= 2;
+        if ( $tab_w < 1 ) {
+            if ( $self->{choose_columns} ) {
+                if ( ! $desired_cols ) {
+                    $desired_cols = [ @$cols ];
+                }
+                $tab_w = $self->{tab_width};
+                if ( ! ( $self->{tab_width} % 2 ) ) {
+                     ++$tab_w;
+                }
+                my $avail_w = $term_w - ( $edge_w * 2 + $min_col_w_th );
+                my $max_cols = 1 + int( $avail_w / ( 1 + $min_col_w_th ) );
+                my $cs_label = "Current window width only supports $max_cols columns.";
+                $cs_label .= "\nPlease reduce your selection or widen the terminal:";
+                # Choose
+                my $new_cols = Term::Choose::Util::choose_a_subset(
+                    [ @{$tbl_orig->[0]}[@$cols] ],
+                    { index => 1, all_by_default => 1, keep_chosen => 1, cs_label => $cs_label,
+                      cs_begin => "\n", confirm => $confirm, back => $back }
+                );
+                if ( ! defined $new_cols ) {
+                    return;
+                }
+                $term_w = get_term_width();
+                $cols = [ @{$cols}[@$new_cols] ];
+            }
+            else {
+                $self->__print_term_not_wide_enough_message( [ @{$tbl_orig->[0]}[@$cols] ] );
+                return;
+            }
+        }
+    }
+    if ( ! $desired_cols ) {
+        $desired_cols = $cols;
+    }
+    return $desired_cols, $cols;
+}
+
+
+
+sub __get_data {
+    my ( $self, $tbl_orig, $next ) = @_;
+    my $term_w = get_term_width() + EXTRA_W;
+    $tab_w = $self->{tab_width};
+    if ( ! ( $self->{tab_width} % 2 ) ) {
+        ++$tab_w;   # include the `|`
+    }
+    my ( $desired_cols, $possible_cols ) = $self->__used_columns( $term_w, $tbl_orig, $next );
+    if ( ! defined $desired_cols ) {
+        return;
+    }
+    $self->{_used_cols_tbl_orig} = $possible_cols;
+    $self->{_desired_cols_tbl_orig} = $desired_cols;
     my $items_count = $self->{_last_index} * @{$tbl_orig->[0]}; ##
     my $progress = Term::TablePrint::ProgressBar->new( {
         total => $self->{_last_index} * 3 + 2, # + 2: 2 out of 3 loops include the header.
@@ -336,10 +375,16 @@ sub __get_data {
 sub __write_table {
     my ( $self, $term_w, $tbl_orig, $tbl_print, $tbl_w, $header_rows, $w_col_names ) = @_;
     my @idxs_tbl_print;
-    my $return = $last_write_table;
+    my $return;
     if ( $self->{_search_regex} ) {
         @idxs_tbl_print = map { $_ - 1 } @{$self->{_idx_search_matches}}; # because of the removed tbl_print header
         $return = $from_filtered_table;
+    }
+    elsif ( $self->{choose_columns} == 1 ) {
+        $return = $choose_and_print;
+    }
+    else {
+        $return = $last_write_table;
     }
     my $footer;
     if ( $self->{footer} ) {
@@ -439,11 +484,9 @@ sub __copy_table {
 
     ROW: for my $i ( 0 .. $self->{_last_index} ) {
         my $tmp_row = [];
-        #COL: for my $j ( @{$self->{_used_cols_tbl_orig}} ) {                                                           # >>>
-        #    $str = $tbl_orig->[$i][$j]; # this is where the copying happens                                            # >>>
-        COL: for ( @{$tbl_orig->[$i]} ) {                                                                               # °°°
-            $str = $_; # this is where the copying happens                                                              # °°°
-            $str = $self->{undef}            if ! defined $str;
+
+        COL: for my $j ( @{$self->{_used_cols_tbl_orig}} ) {
+            $str = $tbl_orig->[$i][$j] // $self->{undef}; # this is where the copying happens
             $str = _handle_reference( $str ) if ref $str;
             if ( $self->{color} ) {
                 $str =~ s/${\PH}//g;
@@ -451,7 +494,7 @@ sub __copy_table {
             }
             if ( $self->{binary_filter} && substr( $str, 0, 100 ) =~ /[\x00-\x08\x0B-\x0C\x0E-\x1F]/ ) {
                 if ( $self->{binary_filter} == 2 ) {
-                    ( $str = sprintf("%v02X", $_ // $self->{undef} ) ) =~ tr/./ /;
+                    ( $str = sprintf( "%v02X", $tbl_orig->[$i][$j] // $self->{undef} ) ) =~ tr/./ /;
                     push @$tmp_row, $str;
                 }
                 else {
@@ -588,7 +631,7 @@ sub __calc_avail_col_width {
                 }
             }
         }
-        my $min_col_width = $self->{min_col_width} < 2 ? 2 : $self->{min_col_width}; # n
+        my $min_col_width = $self->{col_trim_threshold} < 2 ? 2 : $self->{col_trim_threshold};
         my $percent = 4;
 
         TRUNC_COLS: while ( $sum > $avail_w ) {
@@ -621,12 +664,11 @@ sub __calc_avail_col_width {
 
             if ( $sum == $prev_sum ) {
                 --$min_col_width;
-                if ( $min_col_width < 2 ) { # never # ###
+                if ( $min_col_width < 2 ) { # never ##
                     $self->__print_term_not_wide_enough_message( $tbl_copy->[0] );
                     return;
                 }
             }
-
         }
         my $remainder_w = $avail_w - $sum;
         if ( $remainder_w ) {
@@ -725,11 +767,9 @@ sub __cols_to_string {
                 $str .= adjust_to_printwidth( $tbl_copy->[$row][$col], $w_cols_calc->[$col] );
             }
             if ( $self->{color} ) {
-                #my $orig_col = $self->{_used_cols_tbl_orig}[$col];                                                     # >>>
-                #if ( defined $tbl_orig->[$row][$orig_col] ) {                                                          # >>>
-                #    my @color = $tbl_orig->[$row][$orig_col] =~ /(${\SGR_ES})/g;                                       # >>>
-                if ( defined $tbl_orig->[$row][$col] ) {                                                                # °°°
-                    my @color = $tbl_orig->[$row][$col] =~ /(${\SGR_ES})/g;                                             # °°°
+                my $orig_col = $self->{_used_cols_tbl_orig}[$col];
+                if ( defined $tbl_orig->[$row][$orig_col] ) {
+                    my @color = $tbl_orig->[$row][$orig_col] =~ /(${\SGR_ES})/g;
                     if ( @color ) {
                         $str =~ s/${\PH}/shift @color/ge;
                         $str .= "\e[0m";
@@ -763,9 +803,9 @@ sub __cols_to_string {
 
 sub __print_single_row {
     my ( $self, $tbl_orig, $row, $w_col_names, $footer ) = @_;
-    my $avail_w = get_term_width() - 1; # ###
-    if ( $self->{max_width_exp} && $self->{max_width_exp} < $avail_w ) {
-        $avail_w = $self->{max_width_exp};
+    my $avail_w = get_term_width() - 1; ##
+    if ( $self->{expanded_max_width} && $self->{expanded_max_width} < $avail_w ) {
+        $avail_w = $self->{expanded_max_width};
     }
     my $max_key_w = max( @{$w_col_names} ) + 1;
     if ( $max_key_w > int( $avail_w / 3 ) ) {
@@ -776,10 +816,11 @@ sub __print_single_row {
     my $max_value_w = $avail_w - ( $max_key_w + $sep_w );
     my $separator_row = ' ';
     my $row_data = [ ' Close with ENTER' ];
-    #my $cols = $self->{choose_columns} > 1 ? [ 0 .. $#{$tbl_orig->[0]} ] : $self->{_used_cols_tbl_orig};               # >>>
-    #for my $col ( @$cols ) {                                                                                           # >>>
-    for my $col ( 0 .. $#{$tbl_orig->[0]} ) {                                                                           # °°°
-        push @$row_data, $separator_row;
+
+    for my $col ( @{$self->{_desired_cols_tbl_orig}} ) {
+        if ( $self->{expanded_line_spacing} ) {
+            push @$row_data, $separator_row;
+        }
         my $key = $tbl_orig->[0][$col] // $self->{undef};
         my @key_color;
         if ( $self->{color} ) {
@@ -833,7 +874,10 @@ sub __print_single_row {
             }
         }
     }
-    my $regex = qr/^\Q$separator_row\E\z/;
+    my $regex;
+    if ( $self->{expanded_line_spacing} ) {
+        $regex = qr/^\Q$separator_row\E\z/;
+    }
     # Choose
     choose(
         $row_data,
@@ -878,11 +922,10 @@ sub __search {
         last READ;
     }
     no warnings 'uninitialized';
-    my @col_idx = ( 0 .. $#{$tbl_orig->[0]} );                                                                          # °°°
+
     # skip the header row
     for my $idx_row ( 1 .. $self->{_last_index} ) {
-        #for ( @{$self->{_used_cols_tbl_orig}} ) {                                                                      # >>>
-        for ( @col_idx ) {                                                                                              # °°°
+        for ( @{$self->{_desired_cols_tbl_orig}} ) {
             if ( $tbl_orig->[$idx_row][$_] =~ /$self->{_search_regex}/ ) {
                 push @{$self->{_idx_search_matches}}, $idx_row;
                 last;
@@ -966,7 +1009,7 @@ Term::TablePrint - Print a table to the terminal and browse it interactively.
 
 =head1 VERSION
 
-Version 0.175_01
+Version 0.176
 
 =cut
 
@@ -1002,19 +1045,19 @@ Keys to move around:
 
 =item *
 
-the C<ArrowDown> key (or the C<j> key) to move down and  the C<ArrowUp> key (or the C<k> key) to move up.
+The C<ArrowDown> key (or the C<j> key) to move down and  the C<ArrowUp> key (or the C<k> key) to move up.
 
 =item *
 
-the C<PageUp> key (or C<Ctrl-P>) to go to the previous page, the C<PageDown> key (or C<Ctrl-N>) to go to the next page.
+The C<PageUp> key (or C<Ctrl-P>) to go to the previous page, the C<PageDown> key (or C<Ctrl-N>) to go to the next page.
 
 =item *
 
-the C<Insert> key to go back 10 pages, the C<Delete> key to go forward 10 pages.
+The C<Insert> key to go back 10 pages, the C<Delete> key to go forward 10 pages.
 
 =item *
 
-the C<Home> key (or C<Ctrl-A>) to jump to the first row of the table, the C<End> key (or C<Ctrl-E>) to jump to the last
+The C<Home> key (or C<Ctrl-A>) to jump to the first row of the table, the C<End> key (or C<Ctrl-E>) to jump to the last
 row of the table.
 
 =back
@@ -1030,11 +1073,11 @@ If the cursor is not on the first row:
 
 =item *
 
-with the option I<table_expand> disabled the cursor jumps to the table head if C<Enter> is pressed.
+With the option I<table_expand> disabled the cursor jumps to the table head if C<Enter> is pressed.
 
 =item *
 
-with the option I<table_expand> enabled each column of the selected row is output in its own line preceded by the
+With the option I<table_expand> enabled each column of the selected row is output in its own line preceded by the
 column name if C<Enter> is pressed. Another C<Enter> closes this output and goes back to the table output. If a row is
 selected twice in succession, the pointer jumps to the first row.
 
@@ -1142,11 +1185,11 @@ The subroutine C<print_table> takes the same arguments as the method L</print_ta
 
 How to print arbitrary binary data:
 
-0 - print the binary data as it is
+0 - Print the binary data as it is.
 
-1 - "BNRY" is printed instead of the binary data
+1 - "BNRY" is printed instead of the binary data.
 
-2 - the binary data is printed in hexadecimal format
+2 - The binary data is printed in hexadecimal format.
 
 If the substring of the first 100 characters of the data matches the repexp C</[\x00-\x08\x0B-\x0C\x0E-\x1F]/>, the data
 is considered arbitrary binary data.
@@ -1154,6 +1197,34 @@ is considered arbitrary binary data.
 Printing unfiltered arbitrary binary data could break the output.
 
 Default: 0
+
+=head3 choose_columns
+
+Controls whether the user can choose which columns to display.
+
+0 - Disabled
+
+The user is never prompted to select columns.
+
+1 - Always
+
+The user is always prompted to select which columns to display.
+
+In this mode, C<print_table> runs in an internal loop: after the table is displayed, the user is returned to the column
+selection screen. This allows for iterative viewing until the user exits by selecting the B<" << "> (Back) menu entry.
+
+If the chosen columns exceed the terminal width, C<print_table> falls back to the behavior described in item 2 (treating
+the chosen columns as the new "full" set).
+
+2 - Smart
+
+The user is prompted to select columns only if the table is too wide for the current terminal.
+
+Even if columns are hidden in the multi-row view:
+
+- The single-row view still displays all columns.
+
+- Searching with C<Ctrl-F> scans all columns, including hidden ones.
 
 =head3 codepage_mapping
 
@@ -1165,9 +1236,9 @@ C<Term::Choose> but one can enable it by setting this option.
 
 Setting this option to C<1> enables the codepage mapping offered by L<Win32::Console::ANSI>.
 
-0 - disable automatic codepage mapping
+0 - Disable the automatic codepage mapping.
 
-1 - keep automatic codepage mapping
+1 - Keep the automatic codepage mapping.
 
 Default: 0
 
@@ -1175,17 +1246,24 @@ Default: 0
 
 Enable the support for ANSI SGR escape sequences.
 
-0 - off (default)
+0 - Off (default)
 
-1 - enabled except for the current selected row
+1 - Enabled except for the current selected row
 
-2 - enabled
+2 - Enabled
 
 Colors are reset to normal after the end of each table field.
 
 Numbers with added escape sequences are aligned to the left.
 
 Default: 0
+
+=head3 col_trim_threshold
+
+The columns with a width below or equal I<col_trim_threshold> are only trimmed, if it is still required to lower the row width
+despite all columns wider than I<min_col_width_treshold> have been trimmed to I<col_trim_threshold>.
+
+Default: 30
 
 =head3 decimal_separator
 
@@ -1196,6 +1274,18 @@ Allowed values: a character with a print width of C<1>. If an invalid values is 
 to the default value.
 
 Default: . (dot)
+
+=head3 expanded_line_spacing
+
+0 - Disabled
+
+1 - Insert a blank line between columns when a row is expanded.
+
+Default: 1
+
+=head3 expanded_max_width
+
+Set a maximum width of the expanded table row output. (See option L</table_expand>).
 
 =head3 footer
 
@@ -1228,14 +1318,11 @@ Default: 0
 
 =head3 max_width_exp
 
-Set a maximum width of the expanded table row output. (See option L</table_expand>).
+This option has been renamed to I<expanded_max_width>.
 
 =head3 min_col_width
 
-The columns with a width below or equal I<min_col_width> are only trimmed, if it is still required to lower the row width
-despite all columns wider than I<min_col_width> have been trimmed to I<min_col_width>.
-
-Default: 30
+This options has been renamed to I<col_trim_threshold>.
 
 =head3 mouse
 
@@ -1247,9 +1334,9 @@ Default: 0
 
 Add a space at the beginning and end of each row.
 
-0 - off (default)
+0 - Off (default)
 
-1 - enabled
+1 - Enabled
 
 =head3 progress_bar
 
@@ -1266,11 +1353,11 @@ String displayed above the table.
 
 Set the behavior of C<Ctrl-F>.
 
-0 - off
+0 - Off
 
-1 - case-insensitive search
+1 - Case-insensitive search
 
-2 - case-sensitive search
+2 - Case-sensitive search
 
 When C<Ctrl-F> is pressed and a regexp is entered, the regexp is appended to the end of the footer.
 
@@ -1298,9 +1385,9 @@ expanding the first row. Pressing any key other than C<Enter> resets these speci
 
 If I<table_expand> is set to 0, the cursor jumps to the to first row (if not already there) when C<Enter> is pressed.
 
-0 - off
+0 - Off
 
-1 - on
+1 - On
 
 Default: 1
 
