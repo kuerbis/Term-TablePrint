@@ -4,7 +4,7 @@ use warnings;
 use strict;
 use 5.16.0;
 
-our $VERSION = '0.177';
+our $VERSION = '0.178';
 use Exporter 'import';
 our @EXPORT_OK = qw( print_table );
 
@@ -530,7 +530,7 @@ sub __calc_col_width {
     my ( $self, $tbl_copy, $progress ) = @_;
     $progress->set_progress_bar();            #
     my $ds = $self->{decimal_separator};
-    my $regex_int_fract = "^([^${ds}EeNn]*)(\Q${ds}\E[0-9]+)?\\z";
+    my $regex_int_fract = "^([^${ds}Ee]*)(\Q${ds}\E[0-9]+)?\\z";
     my @col_idx = ( 0 .. $#{$tbl_copy->[0]} );
     my $col_count = @col_idx;
     my $w_col_names = [];
@@ -557,7 +557,7 @@ sub __calc_col_width {
                     }
                 }
                 else {
-                    # scientific notation, NaN, Inf, Infinity
+                    # scientific notation
                     if ( length $tbl_copy->[$row][$col] > $w_cols->[$col] ) {
                         $w_cols->[$col] = length $tbl_copy->[$row][$col];
                     }
@@ -663,7 +663,6 @@ sub __calc_avail_col_width {
             }
             my $prev_sum = $sum;
             $sum = sum( @$w_cols_calc );
-
             if ( $sum == $prev_sum ) {
                 --$min_col_width;
                 if ( $min_col_width < 2 ) { # never
@@ -725,33 +724,34 @@ sub __cols_to_string {
                             $tbl_copy->[$row][$col] .= ' ' x ( $w_fract->[$col] - length $1 );
                         }
                     }
-                    else {
+                    elsif ( $tbl_copy->[$row][$col] !~ /[eE]/ ) {
                         $tbl_copy->[$row][$col] .= ' ' x $w_fract->[$col];
                     }
+                    #elsif ( $tbl_copy->[$row][$col] =~ /[eE]-/ ) {
+                    #    $tbl_copy->[$row][$col] = sprintf "%.*f", $w_fract->[$col] - 1, $tbl_copy->[$row][$col];
+                    #}
+
                 }
-                #else {
-                #    # integer, scientific notation (3.45e12), 'NaN', 'Inf', 'Infinity', '0 but true'
-                #}
                 if ( length $tbl_copy->[$row][$col] > $w_cols_calc->[$col] ) {
-                    my $signed_one_precision_w = $one_precision_w + ( $tbl_copy->[$row][$col] =~ /^-/ ? 1 : 0 );
-                    my $precision;
-                    if ( $w_cols_calc->[$col] < $signed_one_precision_w ) {
-                        # special treatment because zero precision has no dot
+                    my $precision = $w_cols_calc->[$col] - ( $one_precision_w + ( $tbl_copy->[$row][$col] < 0 ? 1 : 0 ) ) + 1;
+                    # $one_precision_w + 1 if the number is signed (-)
+                    # $precision + 1 because $one_precision_w contains already one precision
+                    if ( $precision == -1 ) {
                         $precision = 0;
+                        # Difference between one-precision-width and zero-precision-width is 2 because zero precision has no dot.
                     }
-                    else {
-                        $precision = $w_cols_calc->[$col] - ( $signed_one_precision_w - 1 );
-                        # -1 because $signed_one_precision_w contains already one precision
+                    if ( $precision > -1 ) {
+                        while ( length( $tbl_copy->[$row][$col] = sprintf "%.*e", $precision, $tbl_copy->[$row][$col] ) > $w_cols_calc->[$col] ) { ##
+                            --$precision;
+                            last if $precision < 0;
+                        }
+
                     }
-                    $tbl_copy->[$row][$col] = sprintf "%.*e", $precision, $tbl_copy->[$row][$col];
-                    # if $tbl_copy->[$row][$col] is a scientific-notation-string which is to big for a conversation to a number
-                    # 'sprintf' returns 'Inf'.
-                    if ( length( $tbl_copy->[$row][$col] ) > $w_cols_calc->[$col] ) {
+                    if ( $precision < 0 ) {
                         $str .= ( '-' x $w_cols_calc->[$col] );
                     }
-                    elsif ( length $tbl_copy->[$row][$col] < $w_cols_calc->[$col] ) {
-                        # $w_cols_calc->[$col] == zero_precision_w + 1  or  $tbl_copy->[$row][$col] == Inf
-                        $str .= ' ' x ( $w_cols_calc->[$col] - length $tbl_copy->[$row][$col] ) . $tbl_copy->[$row][$col];
+                    elsif ( $precision == 0 && length $tbl_copy->[$row][$col] < $w_cols_calc->[$col] ) {
+                        $str .= ' ' . $tbl_copy->[$row][$col];
                     }
                     else {
                         $str .= $tbl_copy->[$row][$col];
@@ -995,7 +995,7 @@ Term::TablePrint - Print a table to the terminal and browse it interactively.
 
 =head1 VERSION
 
-Version 0.177
+Version 0.178
 
 =cut
 
