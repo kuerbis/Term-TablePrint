@@ -338,12 +338,7 @@ sub __get_data {
     } );
     my $tbl_copy = $self->__copy_table( $tbl_orig, $progress );
     $self->__calc_col_width( $tbl_copy, $width, $progress );
-
-    #my $w_cols_calc =
     $self->__calc_avail_col_width( $tbl_copy, $width );
-    #if ( ! defined $w_cols_calc ) {
-    #    return;
-    #}
     $width->{table} = sum( @{$width->{cols_calc}}, $width->{tab} * $#{$width->{cols_calc}}, 2 * $width->{edge} );
     my $tbl_print = $self->__cols_to_string( $tbl_orig, $tbl_copy, $width, $progress );
     my @tmp_header_rows;
@@ -614,7 +609,7 @@ sub __calc_avail_col_width {
                 for my $col ( @col_idx ) {
                     if (   $width->{fract_calc}[$col] && $width->{fract_calc}[$col] > 3 # 3 == 1 decimal separator + 2 decimal places
                        #&& $width->{int}[$col] + $width->{fract_calc}[$col] == $width->{cols_calc}[$col] #
-                       ## the column width could be larger than w_int + w_fract, if the column contains non-digit strings
+                       ## the column width could be larger than width int + width fract_calc, if the column contains non-digit strings
                     ) {
                         --$width->{fract_calc}[$col];
                         --$width->{cols_calc}[$col];
