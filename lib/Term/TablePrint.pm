@@ -668,15 +668,11 @@ sub __calc_avail_col_width {
                 for my $col ( @col_idx ) {
                     if ( $width->{cols_calc}[$col] < $width->{cols}[$col] ) {
                         ++$width->{cols_calc}[$col];
-
-
-                        if ( $width->{fract_calc}[$col] < $width->{fract}[$col] && $width->{int}[$col] + $width->{fract_calc}[$col] < $width->{cols_calc}[$col] ) { # ###
+                        if (    $width->{fract_calc}[$col] < $width->{fract}[$col]
+                             && $width->{int}[$col] + $width->{fract_calc}[$col] < $width->{cols_calc}[$col] ##
+                        ) {
                             ++$width->{fract_calc}[$col]
                         }
-
-
-
-
                         --$remainder_w;
                         if ( $remainder_w == 0 ) {
                             last REMAINDER_W;
