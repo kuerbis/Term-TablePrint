@@ -884,7 +884,7 @@ sub __print_single_row {
         $row_data,
         { prompt => '', layout => 2, clear_screen => 1, mouse => $self->{mouse}, hide_cursor => 0, empty => ' ',
           search => $self->{search}, skip_items => $regex, footer => $footer, page => $self->{page},
-          color => $self->{color}, color => $self->{color}, codepage_mapping => $self->{codepage_mapping} }
+          color => $self->{color}, codepage_mapping => $self->{codepage_mapping} }
     );
 }
 
